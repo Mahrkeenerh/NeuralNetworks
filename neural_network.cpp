@@ -41,12 +41,40 @@ class DenseLayer {
     std::vector<double> biases;
 };
 
+class DenseNetwork {
+   public:
+    DenseNetwork(std::vector<int> layer_sizes) {
+        this->layer_sizes = layer_sizes;
+
+        for (int i = 0; i < layer_sizes.size() - 1; i++) {
+            this->layers.push_back(DenseLayer(layer_sizes[i], layer_sizes[i + 1]));
+        }
+    }
+
+    std::vector<double> get_output(std::vector<double> input) {
+        std::vector<double> output = input;
+
+        for (int i = 0; i < this->layers.size(); i++) {
+            output = this->layers[i].get_output(output);
+        }
+
+        return output;
+    }
+
+   private:
+    std::vector<int> layer_sizes;
+    std::vector<DenseLayer> layers;
+};
+
 int main() {
-    DenseLayer layer(2, 3);
+    DenseNetwork network({2, 3, 2});
+
     std::vector<double> input = {1.0, 2.0};
-    std::vector<double> output = layer.get_output(input);
+    std::vector<double> output = network.get_output(input);
 
     for (int i = 0; i < output.size(); i++) {
         std::cout << output[i] << std::endl;
     }
+
+    return 0;
 }
