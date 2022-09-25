@@ -1,6 +1,79 @@
 #include <iostream>
 #include <vector>
 
+class Datasets1D {
+   public:
+    float *train_data[50000];
+    float train_labels[50000];
+    float *test_data[10000];
+    float test_labels[10000];
+    float *validation_data[10000];
+    float validation_labels[10000];
+
+    Datasets1D() {
+        for (int i = 0; i < 50000; i++) {
+            train_data[i] = new float[28 * 28];
+        }
+
+        for (int i = 0; i < 10000; i++) {
+            test_data[i] = new float[28 * 28];
+            validation_data[i] = new float[28 * 28];
+        }
+
+        load_data();
+    }
+
+   private:
+    void load_data() {
+        // Load training data
+        FILE *train_data_file = fopen("old_data/fashion_mnist_train_vectors.csv", "r");
+        for (int i = 0; i < 50000; i++) {
+            for (int j = 0; j < 28 * 28; j++) {
+                fscanf(train_data_file, "%f,", &train_data[i][j]);
+                train_data[i][j] /= 255;
+            }
+        }
+
+        // Load test data
+        for (int i = 0; i < 10000; i++) {
+            for (int j = 0; j < 28 * 28; j++) {
+                fscanf(train_data_file, "%f,", &test_data[i][j]);
+                test_data[i][j] /= 255;
+            }
+        }
+        fclose(train_data_file);
+
+        // Load training labels
+        FILE *train_labels_file = fopen("old_data/fashion_mnist_train_labels.csv", "r");
+        for (int i = 0; i < 50000; i++) {
+            fscanf(train_labels_file, "%f,", &train_labels[i]);
+        }
+
+        // Load test labels
+        for (int i = 0; i < 10000; i++) {
+            fscanf(train_labels_file, "%f,", &test_labels[i]);
+        }
+        fclose(train_labels_file);
+
+        // Load validation data
+        FILE *validation_data_file = fopen("old_data/fashion_mnist_test_vectors.csv", "r");
+        for (int i = 0; i < 10000; i++) {
+            for (int j = 0; j < 28 * 28; j++) {
+                fscanf(validation_data_file, "%f,", &validation_data[i][j]);
+                validation_data[i][j] /= 255;
+            }
+        }
+        fclose(validation_data_file);
+
+        // Load validation labels
+        FILE *validation_labels_file = fopen("old_data/fashion_mnist_test_labels.csv", "r");
+        for (int i = 0; i < 10000; i++) {
+            fscanf(validation_labels_file, "%f,", &validation_labels[i]);
+        }
+        fclose(validation_labels_file);
+    }
+};
+
 class DenseLayer {
    public:
     int input_size;
@@ -67,6 +140,29 @@ class DenseNetwork {
 };
 
 int main() {
+    Datasets1D datasets;
+
+    std::cout << "Training data: ";
+    for (int i = 0; i < 28 * 28; i++) {
+        std::cout << datasets.train_data[0][i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Training label: " << datasets.train_labels[0] << std::endl;
+
+    std::cout << "Test data: ";
+    for (int i = 0; i < 28 * 28; i++) {
+        std::cout << datasets.test_data[0][i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Test label: " << datasets.test_labels[0] << std::endl;
+
+    std::cout << "Validation data: ";
+    for (int i = 0; i < 28 * 28; i++) {
+        std::cout << datasets.validation_data[0][i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Validation label: " << datasets.validation_labels[0] << std::endl;
+
     DenseNetwork network({2, 3, 2});
 
     std::vector<double> input = {1.0, 2.0};
