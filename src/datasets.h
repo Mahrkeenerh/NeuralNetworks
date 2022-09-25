@@ -13,7 +13,7 @@ class Datasets1D {
     int train_size;
     int test_size;
 
-    Datasets1D(int train_size, int test_size);
+    Datasets1D(int train_size = -1, int test_size = -1);
 
    private:
     void load_data();
