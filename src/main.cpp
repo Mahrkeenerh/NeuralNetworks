@@ -6,37 +6,64 @@
 #include "layers.h"
 #include "networks.h"
 
-int main() {
-    // measure time
-    clock_t start = clock();
-
-    // Datasets1D datasets(500, 100);
-    DenseNetwork network({2, 4, 2});
+void xor_net() {
+    DenseNetwork network({2, 3, 2});
 
     // Evaluate network
-    std::vector<float> input_data[4] = {
+    std::vector<std::vector<float>> input_data = {
         {0, 0},
         {0, 1},
         {1, 0},
         {1, 1}};
-    std::vector<float> target_data[4] = {
-        {1, 0},
-        {0, 1},
-        {0, 1},
-        {1, 0}};
+    std::vector<int> target_data = {0, 1, 1, 0};
 
+    // Train network
+    network.train(input_data, target_data, 10000, 0.1);
+
+    // Evaluate network
     for (int i = 0; i < 4; i++) {
         std::vector<float> output = network.predict(input_data[i]);
-        float error = mse(output, target_data[i]);
 
         int result = output[0] > output[1] ? 0 : 1;
 
         std::cout << "Input: " << input_data[i][0] << ", " << input_data[i][1];
         std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << output[0] << ", " << output[1];
-        std::cout << " | Target: " << target_data[i][0] << ", " << target_data[i][1];
-        std::cout << " | Error: " << error << std::endl;
+        std::cout << " | Confidence: " << output[result];
+        std::cout << " | Target: " << target_data[i] << std::endl;
     }
+}
+
+void mnist_net() {
+    Datasets1D datasets(800, 0);
+
+    DenseNetwork network({784, 16, 10});
+
+    network.train(datasets.train_data, datasets.train_labels, 10, 0.1);
+
+    // Evaluate network
+    for (int i = 0; i < 10; i++) {
+        std::vector<float> output = network.predict(datasets.test_data[i]);
+
+        int result = 0;
+        for (int j = 1; j < 10; j++) {
+            if (output[j] > output[result]) {
+                result = j;
+            }
+        }
+
+        std::cout << "i: " << i;
+        std::cout << " | Output: " << result;
+        std::cout << " | Confidence: " << output[result];
+        std::cout << " | Target: " << datasets.test_labels[i] << std::endl;
+    }
+}
+
+int main() {
+    // measure time
+    clock_t start = clock();
+
+    xor_net();
+    // mnist_net();
 
     // measure time
     clock_t end = clock();

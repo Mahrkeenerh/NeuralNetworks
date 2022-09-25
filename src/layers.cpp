@@ -12,6 +12,9 @@ DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(floa
     this->weights = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size, 0.0));
     this->biases = std::vector<float>(output_size, 0.0);
 
+    this->gradients_w = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size, 0.0));
+    this->gradients_b = std::vector<float>(output_size, 0.0);
+
     // Initialize weights and biases with random values between -1 and 1
     for (int i = 0; i < output_size; i++) {
         for (int j = 0; j < input_size; j++) {

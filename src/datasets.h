@@ -1,11 +1,12 @@
 #ifndef datasets_h
 #define datasets_h
 
+#include <vector>
+
 class Datasets1D {
    public:
-    float *train_data[50000], train_labels[50000];
-    float *test_data[10000], test_labels[10000];
-    float *validation_data[10000], validation_labels[10000];
+    std::vector<std::vector<float>> train_data, test_data, valid_data;
+    std::vector<int> train_labels, test_labels, valid_labels;
 
     int train_size, test_size;
 

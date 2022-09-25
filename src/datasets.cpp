@@ -22,16 +22,13 @@ Datasets1D::Datasets1D(int train_size, int test_size) {
         this->test_size = 10000;
     }
 
-    // Allocate memory for training data
-    for (int i = 0; i < this->train_size; i++) {
-        train_data[i] = new float[28 * 28];
-    }
-
-    // Allocate memory for test and validation data
-    for (int i = 0; i < this->test_size; i++) {
-        test_data[i] = new float[28 * 28];
-        validation_data[i] = new float[28 * 28];
-    }
+    // Allocate memory
+    this->train_data = std::vector<std::vector<float>>(this->train_size, std::vector<float>(28 * 28));
+    this->train_labels = std::vector<int>(this->train_size);
+    this->test_data = std::vector<std::vector<float>>(this->test_size, std::vector<float>(28 * 28));
+    this->test_labels = std::vector<int>(this->test_size);
+    this->valid_data = std::vector<std::vector<float>>(test_size, std::vector<float>(28 * 28));
+    this->valid_labels = std::vector<int>(test_size);
 
     load_data();
 }
@@ -58,12 +55,12 @@ void Datasets1D::load_data() {
     // Load training labels
     FILE *train_labels_file = fopen("old_data/fashion_mnist_train_labels.csv", "r");
     for (int i = 0; i < this->train_size; i++) {
-        fscanf(train_labels_file, "%f,", &train_labels[i]);
+        fscanf(train_labels_file, "%d,", &train_labels[i]);
     }
 
     // Load test labels
     for (int i = 0; i < this->test_size; i++) {
-        fscanf(train_labels_file, "%f,", &test_labels[i]);
+        fscanf(train_labels_file, "%d,", &test_labels[i]);
     }
     fclose(train_labels_file);
 
@@ -71,8 +68,8 @@ void Datasets1D::load_data() {
     FILE *validation_data_file = fopen("old_data/fashion_mnist_test_vectors.csv", "r");
     for (int i = 0; i < this->test_size; i++) {
         for (int j = 0; j < 28 * 28; j++) {
-            fscanf(validation_data_file, "%f,", &validation_data[i][j]);
-            validation_data[i][j] /= 255;
+            fscanf(validation_data_file, "%f,", &valid_data[i][j]);
+            valid_data[i][j] /= 255;
         }
     }
     fclose(validation_data_file);
@@ -80,7 +77,7 @@ void Datasets1D::load_data() {
     // Load validation labels
     FILE *validation_labels_file = fopen("old_data/fashion_mnist_test_labels.csv", "r");
     for (int i = 0; i < this->test_size; i++) {
-        fscanf(validation_labels_file, "%f,", &validation_labels[i]);
+        fscanf(validation_labels_file, "%d,", &valid_labels[i]);
     }
     fclose(validation_labels_file);
 }
