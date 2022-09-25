@@ -22,7 +22,7 @@ class DenseLayer {
         }
     }
 
-    std::vector<double> get_output(std::vector<double> input) {
+    std::vector<double> predict(std::vector<double> input) {
         std::vector<double> output(this->output_size, 0.0);
 
         for (int i = 0; i < this->output_size; i++) {
@@ -51,11 +51,11 @@ class DenseNetwork {
         }
     }
 
-    std::vector<double> get_output(std::vector<double> input) {
+    std::vector<double> predict(std::vector<double> input) {
         std::vector<double> output = input;
 
         for (int i = 0; i < this->layers.size(); i++) {
-            output = this->layers[i].get_output(output);
+            output = this->layers[i].predict(output);
         }
 
         return output;
@@ -70,7 +70,7 @@ int main() {
     DenseNetwork network({2, 3, 2});
 
     std::vector<double> input = {1.0, 2.0};
-    std::vector<double> output = network.get_output(input);
+    std::vector<double> output = network.predict(input);
 
     for (int i = 0; i < output.size(); i++) {
         std::cout << output[i] << std::endl;
