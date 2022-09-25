@@ -1,5 +1,6 @@
 #include "layers.h"
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -33,4 +34,12 @@ std::vector<float> DenseLayer::predict(std::vector<float> input) {
     }
 
     return output;
+}
+
+float sigmoid(float x) {
+    return 1 / (1 + exp(-x));
+}
+
+float relu(float x) {
+    return x > 0 ? x : 0;
 }
