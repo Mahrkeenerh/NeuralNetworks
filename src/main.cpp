@@ -46,29 +46,7 @@ int main() {
     // measure time
     clock_t start = clock();
 
-    Datasets1D datasets;
-
-    std::cout << "Training data: ";
-    for (int i = 0; i < 28 * 28; i++) {
-        std::cout << datasets.train_data[0][i] << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Training label: " << datasets.train_labels[0] << std::endl;
-
-    std::cout << "Test data: ";
-    for (int i = 0; i < 28 * 28; i++) {
-        std::cout << datasets.test_data[0][i] << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Test label: " << datasets.test_labels[0] << std::endl;
-
-    std::cout << "Validation data: ";
-    for (int i = 0; i < 28 * 28; i++) {
-        std::cout << datasets.validation_data[0][i] << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Validation label: " << datasets.validation_labels[0] << std::endl;
-
+    Datasets1D datasets(500, 100);
     DenseNetwork network({2, 4, 1});
 
     std::vector<float> output = network.predict({1.0, 2.0});

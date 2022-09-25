@@ -10,7 +10,10 @@ class Datasets1D {
     float *validation_data[10000];
     float validation_labels[10000];
 
-    Datasets1D();
+    int train_size;
+    int test_size;
+
+    Datasets1D(int train_size, int test_size);
 
    private:
     void load_data();
