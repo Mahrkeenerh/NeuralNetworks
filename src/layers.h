@@ -5,8 +5,7 @@
 
 class DenseLayer {
    public:
-    int input_size;
-    int output_size;
+    int input_size, output_size;
 
     DenseLayer(int input_size, int output_size, float (*activation)(float));
 
