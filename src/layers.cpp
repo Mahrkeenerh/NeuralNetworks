@@ -28,12 +28,8 @@ std::vector<float> DenseLayer::predict(std::vector<float> input) {
         for (int j = 0; j < this->input_size; j++) {
             output[i] += this->weights[i][j] * input[j];
         }
-        output[i] += this->biases[i];
-    }
 
-    // Apply activation function
-    for (int i = 0; i < this->output_size; i++) {
-        output[i] = this->activation(output[i]);
+        output[i] = this->activation(output[i] + this->biases[i]);
     }
 
     return output;
