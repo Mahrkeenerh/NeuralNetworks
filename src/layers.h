@@ -8,13 +8,14 @@ class DenseLayer {
     int input_size;
     int output_size;
 
-    DenseLayer(int input_size, int output_size);
+    DenseLayer(int input_size, int output_size, float (*activation)(float));
 
-    std::vector<double> predict(std::vector<double> input);
+    std::vector<float> predict(std::vector<float> input);
 
    private:
-    std::vector<std::vector<double>> weights;
-    std::vector<double> biases;
+    std::vector<std::vector<float>> weights;
+    std::vector<float> biases;
+    float (*activation)(float);
 };
 
 #endif

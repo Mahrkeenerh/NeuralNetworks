@@ -3,10 +3,12 @@
 #include <iostream>
 
 Datasets1D::Datasets1D() {
+    // Allocate memory for training data
     for (int i = 0; i < 50000; i++) {
         train_data[i] = new float[28 * 28];
     }
 
+    // Allocate memory for test and validation data
     for (int i = 0; i < 10000; i++) {
         test_data[i] = new float[28 * 28];
         validation_data[i] = new float[28 * 28];
