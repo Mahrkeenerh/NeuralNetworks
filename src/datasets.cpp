@@ -1,7 +1,6 @@
 #include "datasets.h"
 
 #include <fstream>
-#include <iostream>
 #include <sstream>
 
 Datasets1D::Datasets1D(int train_size, int test_size) {
