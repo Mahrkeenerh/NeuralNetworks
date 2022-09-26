@@ -60,15 +60,73 @@ void mnist_net() {
 
 int main() {
     // measure time
-    clock_t start = clock();
+    clock_t start, end;
 
-    xor_net();
+    start = clock();
+    Datasets1D datasets(-1, -1, true);
+    end = clock();
+
+    std::cout << "Time: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms" << std::endl;
+
+    start = clock();
+    Datasets1D datasets2(-1, -1, false);
+    end = clock();
+
+    std::cout << "Time: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms" << std::endl;
+
+    // validate training data
+    for (int i = 0; i < 50000; i++) {
+        for (int j = 0; j < 784; j++) {
+            if (datasets.train_data[i][j] != datasets2.train_data[i][j]) {
+                std::cout << "Error: " << i << ", " << j << std::endl;
+            }
+        }
+    }
+
+    // validate training labels
+    for (int i = 0; i < 50000; i++) {
+        if (datasets.train_labels[i] != datasets2.train_labels[i]) {
+            std::cout << "Error: " << i << std::endl;
+        }
+    }
+
+    // validate test data
+    for (int i = 0; i < 10000; i++) {
+        for (int j = 0; j < 784; j++) {
+            if (datasets.test_data[i][j] != datasets2.test_data[i][j]) {
+                std::cout << "Error: " << i << ", " << j << std::endl;
+            }
+        }
+    }
+
+    // validate test labels
+    for (int i = 0; i < 10000; i++) {
+        if (datasets.test_labels[i] != datasets2.test_labels[i]) {
+            std::cout << "Error: " << i << std::endl;
+        }
+    }
+
+    // validate valid data
+    for (int i = 0; i < 10000; i++) {
+        for (int j = 0; j < 784; j++) {
+            if (datasets.valid_data[i][j] != datasets2.valid_data[i][j]) {
+                std::cout << "Error: " << i << ", " << j << std::endl;
+            }
+        }
+    }
+
+    // validate valid labels
+    for (int i = 0; i < 10000; i++) {
+        if (datasets.valid_labels[i] != datasets2.valid_labels[i]) {
+            std::cout << "Error: " << i << std::endl;
+        }
+    }
+
+    // Validation complete
+    std::cout << "Validation complete" << std::endl;
+
+    // xor_net();
     // mnist_net();
-
-    // measure time
-    clock_t end = clock();
-    float elapsed_secs = float(end - start) / CLOCKS_PER_SEC;
-    std::cout << "Time elapsed: " << elapsed_secs << std::endl;
 
     return 0;
 }
