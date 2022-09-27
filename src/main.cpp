@@ -18,7 +18,7 @@ void xor_net() {
     std::vector<int> target_data = {0, 1, 1, 0};
 
     // Train network
-    network.fit(input_data, target_data, 10000, 0.1);
+    network.fit(input_data, target_data, 1000, 2);
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
@@ -27,9 +27,9 @@ void xor_net() {
         int result = output[0] > output[1] ? 0 : 1;
 
         std::cout << "Input: " << input_data[i][0] << ", " << input_data[i][1];
+        std::cout << " | Target: " << target_data[i];
         std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << output[result];
-        std::cout << " | Target: " << target_data[i] << std::endl;
+        std::cout << " | Confidence: " << output[result] << std::endl;
     }
 }
 
@@ -64,7 +64,7 @@ int main() {
 
     start = clock();
 
-    // xor_net();
+    xor_net();
     // mnist_net();
 
     end = clock();
