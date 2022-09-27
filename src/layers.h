@@ -12,9 +12,7 @@ class DenseLayer {
     std::vector<float> predict(std::vector<float> input);
 
     std::vector<std::vector<float>> weights;
-    std::vector<float> biases;
     std::vector<std::vector<float>> gradients_w;
-    std::vector<float> gradients_b;
     float (*activation)(float);
 };
 

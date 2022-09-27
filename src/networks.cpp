@@ -47,7 +47,7 @@ void DenseNetwork::fit(
         for (int i = 0; i < this->layers.size(); i++) {
             // Calculate weight error gradients
             for (int n_i = 0; n_i < this->layers[i].output_size; n_i++) {
-                for (int w_i = 0; w_i < this->layers[i].input_size; w_i++) {
+                for (int w_i = 0; w_i < this->layers[i].input_size + 1; w_i++) {
                     this->layers[i].weights[n_i][w_i] += learning_rate;
 
                     float error_after = this->error(inputs, targets);
@@ -57,32 +57,14 @@ void DenseNetwork::fit(
                     this->layers[i].gradients_w[n_i][w_i] = delta_error / learning_rate;
                 }
             }
-
-            // Calculate bias error gradients
-            for (int n_i = 0; n_i < this->layers[i].output_size; n_i++) {
-                this->layers[i].biases[n_i] += learning_rate;
-
-                float error_after = this->error(inputs, targets);
-                float delta_error = error_after - error;
-
-                this->layers[i].biases[n_i] -= learning_rate;
-                this->layers[i].gradients_b[n_i] = delta_error / learning_rate;
-            }
         }
 
         // Update weights
         for (int i = 0; i < this->layers.size(); i++) {
             for (int n_i = 0; n_i < this->layers[i].output_size; n_i++) {
-                for (int w_i = 0; w_i < this->layers[i].input_size; w_i++) {
+                for (int w_i = 0; w_i < this->layers[i].input_size + 1; w_i++) {
                     this->layers[i].weights[n_i][w_i] -= this->layers[i].gradients_w[n_i][w_i] * learning_rate;
                 }
-            }
-        }
-
-        // Update biases
-        for (int i = 0; i < this->layers.size(); i++) {
-            for (int n_i = 0; n_i < this->layers[i].output_size; n_i++) {
-                this->layers[i].biases[n_i] -= this->layers[i].gradients_b[n_i] * learning_rate;
             }
         }
     }

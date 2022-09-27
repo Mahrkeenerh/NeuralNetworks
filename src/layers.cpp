@@ -8,18 +8,14 @@ DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(floa
     this->output_size = output_size;
     this->activation = activation;
 
-    this->weights = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size, 0.0));
-    this->biases = std::vector<float>(output_size, 0.0);
+    this->weights = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
+    this->gradients_w = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
 
-    this->gradients_w = std::vector<std::vector<float>>(output_size, std::vector<float>(input_size, 0.0));
-    this->gradients_b = std::vector<float>(output_size, 0.0);
-
-    // Initialize weights and biases with random values between -1 and 1
+    // Initialize weights with random values between -1 and 1
     for (int i = 0; i < output_size; i++) {
-        for (int j = 0; j < input_size; j++) {
+        for (int j = 0; j < input_size + 1; j++) {
             this->weights[i][j] = (float)rand() / RAND_MAX * 2 - 1;
         }
-        this->biases[i] = (float)rand() / RAND_MAX * 2 - 1;
     }
 }
 
@@ -28,11 +24,13 @@ std::vector<float> DenseLayer::predict(std::vector<float> input) {
 
     // Calculate output for each neuron
     for (int i = 0; i < this->output_size; i++) {
+        output[i] = this->weights[i][0];
+
         for (int j = 0; j < this->input_size; j++) {
-            output[i] += this->weights[i][j] * input[j];
+            output[i] += this->weights[i][j + 1] * input[j];
         }
 
-        output[i] = this->activation(output[i] + this->biases[i]);
+        output[i] = this->activation(output[i]);
     }
 
     return output;
