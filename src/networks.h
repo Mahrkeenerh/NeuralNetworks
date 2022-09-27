@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "datasets.h"
 #include "layers.h"
 
 class DenseNetwork {
@@ -10,10 +11,10 @@ class DenseNetwork {
     DenseNetwork(std::vector<int> layer_sizes);
 
     std::vector<float> predict(std::vector<float> input);
-    void fit(std::vector<std::vector<float>> inputs, std::vector<int> targets, int epochs,
-             float learning_rate);
+    void fit(Dataset1D dataset, int epochs, float learning_rate);
 
     float error(std::vector<std::vector<float>> inputs, std::vector<int> targets);
+    float accuracy(std::vector<std::vector<float>> inputs, std::vector<int> targets);
     std::vector<float> output_errors(std::vector<float> inputs, int target, float (*derivative)(float));
 
    private:

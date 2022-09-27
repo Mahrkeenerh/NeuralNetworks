@@ -3,7 +3,18 @@
 #include <fstream>
 #include <sstream>
 
-Datasets1D::Datasets1D(int train_size, int test_size) {
+Dataset1D::Dataset1D(std::vector<std::vector<float>> data, std::vector<int> labels) {
+    this->train_data = data;
+    this->train_labels = labels;
+
+    this->test_data = data;
+    this->test_labels = labels;
+
+    this->train_size = data.size();
+    this->test_size = data.size();
+}
+
+Dataset1D::Dataset1D(int train_size, int test_size) {
     this->train_size = train_size;
     this->test_size = test_size;
 
@@ -26,7 +37,7 @@ Datasets1D::Datasets1D(int train_size, int test_size) {
     load_data();
 }
 
-void Datasets1D::load_data() {
+void Dataset1D::load_data() {
     std::string line;
 
     std::ifstream train_data_file("old_data/fashion_mnist_train_vectors.csv");

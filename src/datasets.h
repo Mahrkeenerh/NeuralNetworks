@@ -3,14 +3,15 @@
 
 #include <vector>
 
-class Datasets1D {
+class Dataset1D {
    public:
     std::vector<std::vector<float>> train_data, test_data, valid_data;
     std::vector<int> train_labels, test_labels, valid_labels;
 
     int train_size, test_size;
 
-    Datasets1D(int train_size = -1, int test_size = -1);
+    Dataset1D(std::vector<std::vector<float>> data, std::vector<int> labels);
+    Dataset1D(int train_size = -1, int test_size = -1);
 
    private:
     void load_data();

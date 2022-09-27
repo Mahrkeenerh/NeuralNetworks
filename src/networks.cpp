@@ -3,8 +3,6 @@
 #include <cmath>
 #include <iostream>
 
-#include "layers.h"
-
 DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     this->layer_sizes = layer_sizes;
 
@@ -28,14 +26,23 @@ std::vector<float> DenseNetwork::predict(std::vector<float> input) {
     return output;
 }
 
-void DenseNetwork::fit(std::vector<std::vector<float>> inputs, std::vector<int> targets, int epochs,
-                       float learning_rate) {
+void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
     for (int epoch = 0; epoch < epochs; epoch++) {
-        // Backpropagation
-        for (int i = 0; i < inputs.size(); i++) {
-            std::vector<float> outputs = this->predict(inputs[i]);
+        clock_t start, end;
+        start = clock();
+        std::cout << "..." << std::endl;
+
+        for (int i = 0; i < dataset.train_data.size(); i++) {
+            if (i % 100 == 0) {
+                std::cout << "\033[F"
+                          << "Input: " << i + 1 << "/" << dataset.train_data.size() << "\033[K"
+                          << std::endl;
+            }
+
+            // Backpropagation
+            std::vector<float> outputs = this->predict(dataset.train_data[i]);
             std::vector<float> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
-            target_vector[targets[i]] = 1;
+            target_vector[dataset.train_labels[i]] = 1;
 
             // Calculate output layer errors
             for (int n_i = 0; n_i < this->layers[this->layers.size() - 1].output_size; n_i++) {
@@ -82,7 +89,8 @@ void DenseNetwork::fit(std::vector<std::vector<float>> inputs, std::vector<int> 
 
             // Update weights
             for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                std::vector<float> l_inputs = (l_i == 0) ? inputs[i] : this->layers[l_i - 1].outputs;
+                std::vector<float> l_inputs =
+                    (l_i == 0) ? dataset.train_data[i] : this->layers[l_i - 1].outputs;
 
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
                     for (int w_i = 0; w_i < this->layers[l_i].input_size + 1; w_i++) {
@@ -94,8 +102,15 @@ void DenseNetwork::fit(std::vector<std::vector<float>> inputs, std::vector<int> 
             }
         }
 
-        float error = this->error(inputs, targets);
-        std::cout << "Epoch " << epoch + 1 << ": " << error << std::endl;
+        float error = this->error(dataset.test_data, dataset.test_labels);
+        float accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
+
+        end = clock();
+        float epoch_time = (float)(end - start) / CLOCKS_PER_SEC;
+
+        std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs << ": " << error
+                  << " Accuracy: " << accuracy << " Epoch time: " << epoch_time
+                  << "s ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
     }
 }
 
@@ -110,6 +125,27 @@ float DenseNetwork::error(std::vector<std::vector<float>> inputs, std::vector<in
     }
 
     return error / inputs.size() * 2;
+}
+
+float DenseNetwork::accuracy(std::vector<std::vector<float>> inputs, std::vector<int> targets) {
+    int correct = 0;
+
+    for (int i = 0; i < inputs.size(); i++) {
+        std::vector<float> outputs = this->predict(inputs[i]);
+        int max_index = 0;
+
+        for (int j = 0; j < outputs.size(); j++) {
+            if (outputs[j] > outputs[max_index]) {
+                max_index = j;
+            }
+        }
+
+        if (max_index == targets[i]) {
+            correct++;
+        }
+    }
+
+    return (float)correct / inputs.size();
 }
 
 float mse(float output, float target) { return pow(output - target, 2); }

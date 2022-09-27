@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <iostream>
-#include <vector>
 
 DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(float)) {
     this->input_size = input_size;
