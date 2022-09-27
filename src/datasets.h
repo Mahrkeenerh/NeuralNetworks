@@ -5,8 +5,8 @@
 
 class Dataset1D {
    public:
-    std::vector<std::vector<float>> train_data, test_data, valid_data;
-    std::vector<int> train_labels, test_labels, valid_labels;
+    std::vector<std::vector<float>> train_data, test_data;
+    std::vector<int> train_labels, test_labels;
 
     int train_size, test_size;
 
