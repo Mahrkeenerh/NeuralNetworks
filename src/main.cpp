@@ -18,7 +18,7 @@ void xor_net() {
     std::vector<int> target_data = {0, 1, 1, 0};
 
     // Train network
-    network.train(input_data, target_data, 10000, 0.1);
+    network.fit(input_data, target_data, 10000, 0.1);
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
@@ -38,7 +38,7 @@ void mnist_net() {
 
     DenseNetwork network({784, 16, 10});
 
-    network.train(datasets.train_data, datasets.train_labels, 10, 0.1);
+    network.fit(datasets.train_data, datasets.train_labels, 10, 0.1);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {

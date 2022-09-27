@@ -10,7 +10,7 @@ class DenseNetwork {
     DenseNetwork(std::vector<int> layer_sizes);
 
     std::vector<float> predict(std::vector<float> input);
-    void train(
+    void fit(
         std::vector<std::vector<float>> inputs,
         std::vector<int> targets,
         int epochs,
