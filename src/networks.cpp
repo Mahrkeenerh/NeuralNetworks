@@ -66,7 +66,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
                 }
             }
 
-            // Print outputs, targets, and errors
+            // // Print outputs, targets, and errors
             // std::cout << "Outputs: ";
             // for (int i = 0; i < outputs.size(); i++) {
             //     std::cout << outputs[i] << " ";
@@ -93,24 +93,27 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
                     (l_i == 0) ? dataset.train_data[i] : this->layers[l_i - 1].outputs;
 
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    for (int w_i = 0; w_i < this->layers[l_i].input_size + 1; w_i++) {
-                        float input = (w_i == 0) ? 1 : l_inputs[w_i - 1];
+                    for (int w_i = 1; w_i < this->layers[l_i].input_size + 1; w_i++) {
+                        // float input = (w_i == 0) ? 1 : l_inputs[w_i - 1];
                         this->layers[l_i].weights[n_i][w_i] -=
-                            this->layers[l_i].errors[n_i] * learning_rate * input;
+                            this->layers[l_i].errors[n_i] * learning_rate * l_inputs[w_i - 1];
                     }
+                    this->layers[l_i].weights[n_i][0] -= this->layers[l_i].errors[n_i] * learning_rate;
                 }
             }
         }
 
         float error = this->error(dataset.test_data, dataset.test_labels);
-        float accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
+        float train_accuracy = this->accuracy(dataset.train_data, dataset.train_labels);
+        float test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
 
         end = clock();
         float epoch_time = (float)(end - start) / CLOCKS_PER_SEC;
 
         std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs << ": " << error
-                  << " Accuracy: " << accuracy << " Epoch time: " << epoch_time
-                  << "s ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
+                  << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
+                  << " | Epoch time: " << epoch_time << "s | ETA: " << epoch_time * (epochs - epoch - 1)
+                  << "s\033[K" << std::endl;
     }
 }
 

@@ -14,7 +14,7 @@ void xor_net() {
     DenseNetwork network({2, 3, 2});
 
     // Train network
-    network.fit(dataset, 100, 1);
+    network.fit(dataset, 500, 1);
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
@@ -31,9 +31,9 @@ void xor_net() {
 
 void mnist_net() {
     Dataset1D dataset(8000, 2000);
-    DenseNetwork network({784, 128, 10});
+    DenseNetwork network({784, 10});
 
-    network.fit(dataset, 50, 0.0001);
+    network.fit(dataset, 100, 1.5);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
@@ -49,7 +49,12 @@ void mnist_net() {
         std::cout << "i: " << i;
         std::cout << " | Target: " << dataset.test_labels[i];
         std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << output[result] << std::endl;
+        std::cout << " | Confidence: " << output[result];
+        std::cout << " | Confidences: ";
+        for (int j = 0; j < 10; j++) {
+            std::cout << output[j] << " ";
+        }
+        std::cout << std::endl;
     }
 }
 
@@ -63,7 +68,7 @@ int main() {
     mnist_net();
 
     end = clock();
-    std::cout << "Time: " << (end - start) / CLOCKS_PER_SEC << "ms" << std::endl;
+    std::cout << "Time: " << (float)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
 
     return 0;
 }
