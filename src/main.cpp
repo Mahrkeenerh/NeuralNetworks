@@ -7,7 +7,7 @@
 #include "networks.h"
 
 void xor_net() {
-    std::vector<std::vector<float>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    std::vector<std::vector<double>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
     std::vector<int> target_data = {0, 1, 1, 0};
     Dataset1D dataset = Dataset1D(input_data, target_data);
 
@@ -18,7 +18,7 @@ void xor_net() {
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
-        std::vector<float> output = network.predict(input_data[i]);
+        std::vector<double> output = network.predict(input_data[i]);
 
         int result = output[0] > output[1] ? 0 : 1;
 
@@ -30,14 +30,14 @@ void xor_net() {
 }
 
 void mnist_net() {
-    Dataset1D dataset(8000, 2000);
+    Dataset1D dataset;
     DenseNetwork network({784, 10});
 
-    network.fit(dataset, 100, 1.5);
+    network.fit(dataset, 50, 1);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
-        std::vector<float> output = network.predict(dataset.test_data[i]);
+        std::vector<double> output = network.predict(dataset.test_data[i]);
 
         int result = 0;
         for (int j = 1; j < 10; j++) {
@@ -68,7 +68,7 @@ int main() {
     mnist_net();
 
     end = clock();
-    std::cout << "Time: " << (float)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    std::cout << "Time: " << (double)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
 
     return 0;
 }

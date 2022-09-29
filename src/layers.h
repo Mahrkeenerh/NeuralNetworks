@@ -7,23 +7,23 @@ class DenseLayer {
    public:
     int input_size, output_size;
 
-    DenseLayer(int input_size, int output_size, float (*activation)(float));
+    DenseLayer(int input_size, int output_size, double (*activation)(double));
 
-    std::vector<float> predict(std::vector<float> input);
+    std::vector<double> predict(std::vector<double> input);
 
-    std::vector<std::vector<float>> weights;
-    std::vector<std::vector<float>> gradients;
-    std::vector<float> errors;
-    std::vector<float> outputs;
+    std::vector<std::vector<double>> weights;
+    std::vector<std::vector<double>> gradients;
+    std::vector<double> errors;
+    std::vector<double> outputs;
 
-    float (*activation)(float);
-    float (*derivative)(float);
+    double (*activation)(double);
+    double (*derivative)(double);
 };
 
-float sigmoid(float x);
-float sigmoid_derivative(float x);
+double sigmoid(double x);
+double sigmoid_derivative(double x);
 
-float relu(float x);
-float relu_derivative(float x);
+double relu(double x);
+double relu_derivative(double x);
 
 #endif

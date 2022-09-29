@@ -16,8 +16,8 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
         DenseLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1], sigmoid));
 }
 
-std::vector<float> DenseNetwork::predict(std::vector<float> input) {
-    std::vector<float> output = input;
+std::vector<double> DenseNetwork::predict(std::vector<double> input) {
+    std::vector<double> output = input;
 
     for (int i = 0; i < this->layers.size(); i++) {
         output = this->layers[i].predict(output);
@@ -26,7 +26,7 @@ std::vector<float> DenseNetwork::predict(std::vector<float> input) {
     return output;
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
+void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate) {
     for (int epoch = 0; epoch < epochs; epoch++) {
         clock_t start, end;
         start = clock();
@@ -35,13 +35,13 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
         for (int i = 0; i < dataset.train_data.size(); i++) {
             if (i % 100 == 0) {
                 std::cout << "\033[F"
-                          << "Input: " << i + 1 << "/" << dataset.train_data.size() << "\033[K"
+                          << "data: " << i + 1 << "/" << dataset.train_data.size() << "\033[K"
                           << std::endl;
             }
 
             // Backpropagation
-            std::vector<float> outputs = this->predict(dataset.train_data[i]);
-            std::vector<float> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
+            std::vector<double> outputs = this->predict(dataset.train_data[i]);
+            std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
             target_vector[dataset.train_labels[i]] = 1;
 
             // Calculate output layer errors
@@ -89,12 +89,12 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
 
             // Update weights
             for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                std::vector<float> l_inputs =
+                std::vector<double> l_inputs =
                     (l_i == 0) ? dataset.train_data[i] : this->layers[l_i - 1].outputs;
 
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
                     for (int w_i = 1; w_i < this->layers[l_i].input_size + 1; w_i++) {
-                        // float input = (w_i == 0) ? 1 : l_inputs[w_i - 1];
+                        // double input = (w_i == 0) ? 1 : l_inputs[w_i - 1];
                         this->layers[l_i].weights[n_i][w_i] -=
                             this->layers[l_i].errors[n_i] * learning_rate * l_inputs[w_i - 1];
                     }
@@ -103,25 +103,32 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, float learning_rate) {
             }
         }
 
-        float error = this->error(dataset.test_data, dataset.test_labels);
-        float train_accuracy = this->accuracy(dataset.train_data, dataset.train_labels);
-        float test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
+        // double error = this->error(dataset.test_data, dataset.test_labels);
 
         end = clock();
-        float epoch_time = (float)(end - start) / CLOCKS_PER_SEC;
+        double epoch_time = (double)(end - start) / CLOCKS_PER_SEC;
 
-        std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs << ": " << error
-                  << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
-                  << " | Epoch time: " << epoch_time << "s | ETA: " << epoch_time * (epochs - epoch - 1)
-                  << "s\033[K" << std::endl;
+        // Stats
+        if (epoch % 10 == 9 || epoch == epochs - 1 || epoch == 0) {
+            double train_accuracy = this->accuracy(dataset.train_data, dataset.train_labels);
+            double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
+
+            std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs
+                      << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
+                      << " | Epoch time: " << epoch_time
+                      << "s | ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
+        } else {
+            std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs << " | Epoch time: " << epoch_time
+                      << "s | ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
+        }
     }
 }
 
-float DenseNetwork::error(std::vector<std::vector<float>> inputs, std::vector<int> targets) {
-    float error = 0;
+double DenseNetwork::error(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
+    double error = 0;
 
     for (int i = 0; i < inputs.size(); i++) {
-        std::vector<float> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
+        std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
         target_vector[targets[i]] = 1;
 
         error += mse(this->predict(inputs[i]), target_vector);
@@ -130,11 +137,11 @@ float DenseNetwork::error(std::vector<std::vector<float>> inputs, std::vector<in
     return error / inputs.size() * 2;
 }
 
-float DenseNetwork::accuracy(std::vector<std::vector<float>> inputs, std::vector<int> targets) {
+double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
     int correct = 0;
 
     for (int i = 0; i < inputs.size(); i++) {
-        std::vector<float> outputs = this->predict(inputs[i]);
+        std::vector<double> outputs = this->predict(inputs[i]);
         int max_index = 0;
 
         for (int j = 0; j < outputs.size(); j++) {
@@ -148,13 +155,13 @@ float DenseNetwork::accuracy(std::vector<std::vector<float>> inputs, std::vector
         }
     }
 
-    return (float)correct / inputs.size();
+    return (double)correct / inputs.size();
 }
 
-float mse(float output, float target) { return pow(output - target, 2); }
+double mse(double output, double target) { return pow(output - target, 2); }
 
-float mse(std::vector<float> output, std::vector<float> target) {
-    float error = 0.0;
+double mse(std::vector<double> output, std::vector<double> target) {
+    double error = 0.0;
 
     for (int i = 0; i < output.size(); i++) {
         error += mse(output[i], target[i]);

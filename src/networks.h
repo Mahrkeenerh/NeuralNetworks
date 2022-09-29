@@ -10,19 +10,20 @@ class DenseNetwork {
    public:
     DenseNetwork(std::vector<int> layer_sizes);
 
-    std::vector<float> predict(std::vector<float> input);
-    void fit(Dataset1D dataset, int epochs, float learning_rate);
+    std::vector<double> predict(std::vector<double> input);
+    void fit(Dataset1D dataset, int epochs, double learning_rate);
 
-    float error(std::vector<std::vector<float>> inputs, std::vector<int> targets);
-    float accuracy(std::vector<std::vector<float>> inputs, std::vector<int> targets);
-    std::vector<float> output_errors(std::vector<float> inputs, int target, float (*derivative)(float));
+    double error(std::vector<std::vector<double>> inputs, std::vector<int> targets);
+    double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
+    std::vector<double> output_errors(std::vector<double> inputs, int target,
+                                      double (*derivative)(double));
 
    private:
     std::vector<int> layer_sizes;
     std::vector<DenseLayer> layers;
 };
 
-float mse(float output, float target);
-float mse(std::vector<float> outputs, std::vector<float> target);
+double mse(double output, double target);
+double mse(std::vector<double> outputs, std::vector<double> target);
 
 #endif
