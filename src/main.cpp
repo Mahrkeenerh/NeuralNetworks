@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <numeric>
@@ -40,14 +41,8 @@ void mnist_net(int epochs, double learning_rate) {
     for (int i = 0; i < 10; i++) {
         std::vector<double> output = network.predict(dataset.test_data[i]);
 
-        int result = 0;
-        for (int j = 1; j < 10; j++) {
-            if (output[j] > output[result]) {
-                result = j;
-            }
-        }
-
-        double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0);
+        int result = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
+        double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
 
         std::cout << "i: " << i;
         std::cout << " | Target: " << dataset.test_labels[i];
