@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 #include "datasets.h"
@@ -46,15 +47,12 @@ void mnist_net(int epochs, double learning_rate) {
             }
         }
 
+        double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0);
+
         std::cout << "i: " << i;
         std::cout << " | Target: " << dataset.test_labels[i];
         std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << output[result];
-        // std::cout << " | Confidences: ";
-        // for (int j = 0; j < 10; j++) {
-        //     std::cout << output[j] << " ";
-        // }
-        std::cout << std::endl;
+        std::cout << " | Confidence: " << confidence << std::endl;
     }
 }
 
@@ -63,7 +61,7 @@ int main(int argc, char *argv[]) {
 
     // Get epochs and learning rate from command line arguments
     int epochs = 10;
-    double learning_rate = 0.1;
+    double learning_rate = 0.01;
     if (argc > 1) {
         epochs = std::stoi(argv[1]);
     }

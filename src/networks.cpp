@@ -30,13 +30,22 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int 
     for (int epoch = 0; epoch < epochs; epoch++) {
         clock_t start, end;
         start = clock();
-        std::cout << "..." << std::endl;
 
-        for (int i = 0; i < dataset.train_data.size(); i++) {
-            if (i % 100 == 0) {
-                std::cout << "\033[F"
-                          << "data: " << i + 1 << "/" << dataset.train_data.size() << "\033[K"
-                          << std::endl;
+        // Visual loading bar
+        int progress = 0;
+        int padding = std::to_string(dataset.train_size).length() - std::to_string(0).length() + 1;
+        std::cout << std::string(padding, ' ') << "0/" << dataset.train_size << " ["
+                  << std::string(50, '-') << "]" << std::endl;
+
+        for (int i = 0; i < dataset.train_size; i++) {
+            if ((int)((double)(i + 1) / dataset.train_size * 50) > progress) {
+                progress = (int)((double)(i + 1) / dataset.train_size * 50);
+
+                int padding =
+                    std::to_string(dataset.train_size).length() - std::to_string(i + 1).length() + 1;
+                std::cout << "\033[F" << std::string(padding, ' ') << i + 1 << "/" << dataset.train_size
+                          << " [" << std::string(progress - 1, '=') << ">"
+                          << std::string(50 - progress, '-') << "]\033[K" << std::endl;
             }
 
             // Backpropagation
