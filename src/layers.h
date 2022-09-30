@@ -20,6 +20,8 @@ class DenseLayer {
     double (*derivative)(double);
 };
 
+double randn();
+
 double sigmoid(double x);
 double sigmoid_derivative(double x);
 

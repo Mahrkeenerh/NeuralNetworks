@@ -24,7 +24,13 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
     // Initialize weights with random values between -1 and 1
     for (int i = 0; i < output_size; i++) {
         for (int j = 0; j < input_size + 1; j++) {
-            this->weights[i][j] = (double)rand() / RAND_MAX * 2 - 1;
+            if (activation == sigmoid) {
+                // Initialize weights with random values between -1 and 1
+                this->weights[i][j] = (double)rand() / RAND_MAX * 2 - 1;
+            } else if (activation == relu) {
+                // He initialization with normal distribution
+                this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+            }
         }
     }
 }
@@ -42,6 +48,12 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     }
 
     return this->outputs;
+}
+
+double randn() {
+    double u = (double)rand() / RAND_MAX;
+    double v = (double)rand() / RAND_MAX;
+    return sqrt(-2 * log(u)) * cos(2 * M_PI * v);
 }
 
 double sigmoid(double x) { return 1 / (1 + exp(-x)); }
