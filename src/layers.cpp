@@ -21,12 +21,13 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
     this->errors = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
 
-    // Initialize weights with random values between -1 and 1
     for (int i = 0; i < output_size; i++) {
         for (int j = 0; j < input_size + 1; j++) {
             if (activation == sigmoid) {
-                // Initialize weights with random values between -1 and 1
-                this->weights[i][j] = (double)rand() / RAND_MAX * 2 - 1;
+                // Initialize weights with random values with uniform distribution
+                // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
+                this->weights[i][j] =
+                    (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
             } else if (activation == relu) {
                 // He initialization with normal distribution
                 this->weights[i][j] = randn() * sqrt(2.0 / input_size);
