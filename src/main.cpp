@@ -29,11 +29,11 @@ void xor_net() {
     }
 }
 
-void mnist_net() {
+void mnist_net(int epochs, double learning_rate) {
     Dataset1D dataset;
-    DenseNetwork network({784, 10});
+    DenseNetwork network({784, 128, 64, 10});
 
-    network.fit(dataset, 50, 1);
+    network.fit(dataset, epochs, learning_rate, 1);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
@@ -50,22 +50,34 @@ void mnist_net() {
         std::cout << " | Target: " << dataset.test_labels[i];
         std::cout << " | Output: " << result;
         std::cout << " | Confidence: " << output[result];
-        std::cout << " | Confidences: ";
-        for (int j = 0; j < 10; j++) {
-            std::cout << output[j] << " ";
-        }
+        // std::cout << " | Confidences: ";
+        // for (int j = 0; j < 10; j++) {
+        //     std::cout << output[j] << " ";
+        // }
         std::cout << std::endl;
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    srand(time(NULL));
+
+    // Get epochs and learning rate from command line arguments
+    int epochs = 10;
+    double learning_rate = 0.1;
+    if (argc > 1) {
+        epochs = std::stoi(argv[1]);
+    }
+    if (argc > 2) {
+        learning_rate = std::stod(argv[2]);
+    }
+
     // measure time
     clock_t start, end;
 
     start = clock();
 
     // xor_net();
-    mnist_net();
+    mnist_net(epochs, learning_rate);
 
     end = clock();
     std::cout << "Time: " << (double)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
