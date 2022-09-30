@@ -26,7 +26,7 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     return output;
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate) {
+void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int epoch_stats) {
     for (int epoch = 0; epoch < epochs; epoch++) {
         clock_t start, end;
         start = clock();
@@ -60,7 +60,6 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate) {
                         this->layers[l_i].errors[n_i] += this->layers[l_i + 1].errors[o_i] *
                                                          this->layers[l_i + 1].weights[o_i][n_i + 1];
                     }
-
                     this->layers[l_i].errors[n_i] *=
                         this->layers[l_i].derivative(this->layers[l_i].outputs[n_i]);
                 }
@@ -105,19 +104,22 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate) {
 
         // double error = this->error(dataset.test_data, dataset.test_labels);
 
-        end = clock();
-        double epoch_time = (double)(end - start) / CLOCKS_PER_SEC;
-
         // Stats
-        if (epoch % 10 == 9 || epoch == epochs - 1 || epoch == 0) {
+        if (epoch % epoch_stats == epoch_stats - 1 || epoch == epochs - 1 || epoch == 0) {
             double train_accuracy = this->accuracy(dataset.train_data, dataset.train_labels);
             double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
+
+            end = clock();
+            double epoch_time = (double)(end - start) / CLOCKS_PER_SEC;
 
             std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs
                       << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
                       << " | Epoch time: " << epoch_time
                       << "s | ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
         } else {
+            end = clock();
+            double epoch_time = (double)(end - start) / CLOCKS_PER_SEC;
+
             std::cout << "\033[FEpoch " << epoch + 1 << "/" << epochs << " | Epoch time: " << epoch_time
                       << "s | ETA: " << epoch_time * (epochs - epoch - 1) << "s\033[K" << std::endl;
         }
