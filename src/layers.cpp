@@ -51,10 +51,20 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     return this->outputs;
 }
 
+// Random value from normal distribution using Box-Muller transform
 double randn() {
-    double u = (double)rand() / RAND_MAX;
-    double v = (double)rand() / RAND_MAX;
-    return sqrt(-2 * log(u)) * cos(2 * M_PI * v);
+    double u1 = rand() / (double)RAND_MAX;
+    double u2 = rand() / (double)RAND_MAX;
+    double out = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+
+    // Avoid infinite values
+    while (out == INFINITY || out == -INFINITY) {
+        u1 = rand() / (double)RAND_MAX;
+        u2 = rand() / (double)RAND_MAX;
+        out = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+    }
+
+    return out;
 }
 
 double sigmoid(double x) { return 1 / (1 + exp(-x)); }
