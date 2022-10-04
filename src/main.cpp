@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -35,7 +36,7 @@ void mnist_net(int epochs, double learning_rate) {
     Dataset1D dataset;
     DenseNetwork network({784, 128, 64, 10});
 
-    network.fit(dataset, epochs, learning_rate, 1);
+    network.fit(dataset, epochs, learning_rate);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
@@ -63,6 +64,10 @@ int main(int argc, char *argv[]) {
     if (argc > 2) {
         learning_rate = std::stod(argv[2]);
     }
+
+    // Set double precision
+    std::cout << std::fixed;
+    std::cout << std::setprecision(4);
 
     // measure time
     clock_t start, end;
