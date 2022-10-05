@@ -28,4 +28,13 @@ double sigmoid_derivative(double x);
 double relu(double x);
 double relu_derivative(double x);
 
+double leaky_relu(double x);
+double leaky_relu_derivative(double x);
+
+double swish(double x);
+double swish_derivative(double x);
+
+double softmax(double x);
+double softmax_derivative(double x);
+
 #endif
