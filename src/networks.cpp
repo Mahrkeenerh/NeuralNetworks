@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <numeric>
 
 DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     this->layer_sizes = layer_sizes;
@@ -36,6 +37,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
 
         // Visual loading bar
         int progress, data_padding;
+        int correct = 0;
         if (verbose) {
             progress = 0;
             data_padding = std::to_string(dataset.train_size).length() - std::to_string(0).length() + 1;
@@ -44,7 +46,10 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
                       << std::string(50, '-') << "]" << std::endl;
         }
 
-        int correct = 0;
+        // Random idxs
+        std::vector<int> idxs(dataset.train_size);
+        std::iota(idxs.begin(), idxs.end(), 0);
+        std::random_shuffle(idxs.begin(), idxs.end());
 
         for (int i = 0; i < dataset.train_size; i++) {
             if (verbose && (int)((double)(i + 1) / dataset.train_size * 50) > progress) {
@@ -61,13 +66,13 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
                           << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
             }
 
-            std::vector<double> outputs = this->predict(dataset.train_data[i]);
+            std::vector<double> outputs = this->predict(dataset.train_data[idxs[i]]);
             std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
-            target_vector[dataset.train_labels[i]] = 1;
+            target_vector[dataset.train_labels[idxs[i]]] = 1;
 
             // Add if correct
             if (std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())) ==
-                dataset.train_labels[i]) {
+                dataset.train_labels[idxs[i]]) {
                 correct++;
             }
 
@@ -95,7 +100,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
             // Update weights
             for (int l_i = 0; l_i < this->layers.size(); l_i++) {
                 std::vector<double> l_inputs =
-                    (l_i == 0) ? dataset.train_data[i] : this->layers[l_i - 1].outputs;
+                    (l_i == 0) ? dataset.train_data[idxs[i]] : this->layers[l_i - 1].outputs;
 
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
                     for (int w_i = 1; w_i < this->layers[l_i].input_size + 1; w_i++) {
