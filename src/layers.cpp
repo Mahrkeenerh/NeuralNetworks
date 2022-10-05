@@ -43,6 +43,7 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 }
 
 std::vector<double> DenseLayer::predict(std::vector<double> input) {
+    // #pragma omp parallel for
     // Calculate output for each neuron
     for (int i = 0; i < this->output_size; i++) {
         this->outputs[i] = this->weights[i][0];
@@ -64,6 +65,7 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
         }
     }
 
+    // #pragma omp parallel for
     // Apply activation function
     for (int i = 0; i < this->output_size; i++) {
         this->outputs[i] = this->activation(this->outputs[i]);
@@ -74,6 +76,7 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
 
 void DenseLayer::backpropagate(DenseLayer* connected_layer, std::vector<double> outputs,
                                std::vector<double> target_vector, bool last_layer) {
+    // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->errors[n_i] = 0;
         if (last_layer) {
