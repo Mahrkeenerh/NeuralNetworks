@@ -16,6 +16,7 @@ class DenseLayer {
     std::vector<std::vector<double>> weights;
     std::vector<std::vector<double>> gradients;
     std::vector<double> errors;
+    std::vector<double> batch_errors;
     std::vector<double> outputs;
 
     double (*activation)(double);

@@ -24,6 +24,7 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
     this->gradients =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->errors = std::vector<double>(output_size, 0.0);
+    this->batch_errors = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
 
     for (int i = 0; i < output_size; i++) {

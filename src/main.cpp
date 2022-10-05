@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -16,7 +17,7 @@ void xor_net() {
     DenseNetwork network({2, 3, 2});
 
     // Train network
-    network.fit(dataset, 500, 1);
+    network.fit(dataset, 500, 1, 1);
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
@@ -31,11 +32,11 @@ void xor_net() {
     }
 }
 
-void mnist_net(int epochs, double learning_rate) {
+void mnist_net(int epochs, double learning_rate, int batch_size) {
     Dataset1D dataset;
-    DenseNetwork network({784, 128, 64, 10});
+    DenseNetwork network({784, 64, 10});
 
-    network.fit(dataset, epochs, learning_rate);
+    network.fit(dataset, epochs, learning_rate, batch_size, true);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
@@ -57,12 +58,21 @@ int main(int argc, char *argv[]) {
     // Get epochs and learning rate from command line arguments
     int epochs = 10;
     double learning_rate = 0.01;
+    int batch_size = 1;
     if (argc > 1) {
         epochs = std::stoi(argv[1]);
     }
     if (argc > 2) {
         learning_rate = std::stod(argv[2]);
     }
+    if (argc > 3) {
+        batch_size = std::stoi(argv[3]);
+    }
+
+    // Redirect cout to file
+    // std::ofstream out("output.txt");
+    // std::streambuf *coutbuf = std::cout.rdbuf();
+    // std::cout.rdbuf(out.rdbuf());
 
     // Set double precision
     std::cout << std::fixed;
@@ -71,13 +81,12 @@ int main(int argc, char *argv[]) {
     // measure time
     clock_t start, end;
 
-    start = clock();
-
-    // xor_net();
-    mnist_net(epochs, learning_rate);
-
-    end = clock();
-    std::cout << "Time: " << (double)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    for (int i = 0; i < 3; i++) {
+        start = clock();
+        mnist_net(epochs, learning_rate, batch_size);
+        end = clock();
+        std::cout << "Time: " << (double)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    }
 
     return 0;
 }
