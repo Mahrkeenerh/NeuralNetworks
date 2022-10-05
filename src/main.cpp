@@ -36,7 +36,8 @@ void mnist_net(int epochs, double learning_rate, int batch_size) {
     Dataset1D dataset;
     DenseNetwork network({784, 64, 10});
 
-    network.fit(dataset, epochs, learning_rate, batch_size, true);
+    network.fit(dataset, epochs, learning_rate, true);
+    // network.fit(dataset, epochs, learning_rate, batch_size, true);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
