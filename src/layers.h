@@ -10,6 +10,8 @@ class DenseLayer {
     DenseLayer(int input_size, int output_size, double (*activation)(double));
 
     std::vector<double> predict(std::vector<double> input);
+    void backpropagate(DenseLayer* connected_layer, std::vector<double> outputs,
+                       std::vector<double> target_vector, bool last_layer = false);
 
     std::vector<std::vector<double>> weights;
     std::vector<std::vector<double>> gradients;

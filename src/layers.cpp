@@ -71,6 +71,30 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     return this->outputs;
 }
 
+void DenseLayer::backpropagate(DenseLayer* connected_layer, std::vector<double> outputs,
+                               std::vector<double> target_vector, bool last_layer) {
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] = 0;
+        if (last_layer) {
+            this->errors[n_i] = (outputs[n_i] - target_vector[n_i]);
+        } else {
+            for (int o_i = 0; o_i < connected_layer->output_size; o_i++) {
+                this->errors[n_i] +=
+                    connected_layer->errors[o_i] * connected_layer->weights[o_i][n_i + 1];
+            }
+        }
+
+        if (this->derivative == softmax_derivative) {
+            double sum = 0;
+            for (int idx = 0; idx < outputs.size(); idx++) {
+                sum += exp(outputs[idx]);
+            }
+            this->outputs[n_i] = exp(this->outputs[n_i]) / sum;
+        }
+        this->errors[n_i] *= this->derivative(this->outputs[n_i]);
+    }
+}
+
 // Random value from normal distribution using Box-Muller transform
 double randn() {
     double u1 = rand() / (double)RAND_MAX;

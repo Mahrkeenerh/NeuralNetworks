@@ -27,6 +27,28 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     return output;
 }
 
+void DenseNetwork::backpropagate(std::vector<double> outputs, std::vector<double> target_vector) {
+    this->layers[this->layers.size() - 1].backpropagate(nullptr, outputs, target_vector, true);
+
+    for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
+        this->layers[l_i].backpropagate(&this->layers[l_i + 1], outputs, target_vector);
+    }
+}
+
+void DenseNetwork::update_weights(std::vector<double> input_data, double learning_rate) {
+    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
+        std::vector<double> l_inputs = (l_i == 0) ? input_data : this->layers[l_i - 1].outputs;
+
+        for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
+            for (int w_i = 1; w_i < this->layers[l_i].input_size + 1; w_i++) {
+                this->layers[l_i].weights[n_i][w_i] -=
+                    this->layers[l_i].errors[n_i] * learning_rate * l_inputs[w_i - 1];
+            }
+            this->layers[l_i].weights[n_i][0] -= this->layers[l_i].errors[n_i] * learning_rate;
+        }
+    }
+}
+
 void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool verbose) {
     clock_t train_start = clock();
 
@@ -75,40 +97,8 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
                 correct++;
             }
 
-            // Calculate output layer errors
-            for (int n_i = 0; n_i < this->layers[this->layers.size() - 1].output_size; n_i++) {
-                this->layers[this->layers.size() - 1].errors[n_i] =
-                    (outputs[n_i] - target_vector[n_i]) *
-                    this->layers[this->layers.size() - 1].derivative(outputs[n_i]);
-            }
-
-            // Backpropagate errors
-            for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
-                for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    this->layers[l_i].errors[n_i] = 0;
-
-                    for (int o_i = 0; o_i < this->layers[l_i + 1].output_size; o_i++) {
-                        this->layers[l_i].errors[n_i] += this->layers[l_i + 1].errors[o_i] *
-                                                         this->layers[l_i + 1].weights[o_i][n_i + 1];
-                    }
-                    this->layers[l_i].errors[n_i] *=
-                        this->layers[l_i].derivative(this->layers[l_i].outputs[n_i]);
-                }
-            }
-
-            // Update weights
-            for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                std::vector<double> l_inputs =
-                    (l_i == 0) ? dataset.train_data[idxs[i]] : this->layers[l_i - 1].outputs;
-
-                for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    for (int w_i = 1; w_i < this->layers[l_i].input_size + 1; w_i++) {
-                        this->layers[l_i].weights[n_i][w_i] -=
-                            this->layers[l_i].errors[n_i] * learning_rate * l_inputs[w_i - 1];
-                    }
-                    this->layers[l_i].weights[n_i][0] -= this->layers[l_i].errors[n_i] * learning_rate;
-                }
-            }
+            this->backpropagate(outputs, target_vector);
+            this->update_weights(dataset.train_data[idxs[i]], learning_rate);
         }
 
         // Stats
