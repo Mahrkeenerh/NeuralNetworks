@@ -1,7 +1,6 @@
 #include "layers.h"
 
 #include <cmath>
-#include <iostream>
 
 DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
