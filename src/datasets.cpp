@@ -40,7 +40,7 @@ Dataset1D::Dataset1D(int train_size, int test_size) {
 void Dataset1D::load_data() {
     std::string line;
 
-    std::ifstream train_data_file("old_data/fashion_mnist_train_vectors.csv");
+    std::ifstream train_data_file("data/fashion_mnist_train_vectors.csv");
 
     // Load training data
     for (int i = 0; i < this->train_size; i++) {
@@ -56,7 +56,7 @@ void Dataset1D::load_data() {
         this->train_data.push_back(row);
     }
 
-    std::ifstream train_labels_file("old_data/fashion_mnist_train_labels.csv");
+    std::ifstream train_labels_file("data/fashion_mnist_train_labels.csv");
 
     // Load training labels
     for (int i = 0; i < this->train_size; i++) {
@@ -64,7 +64,7 @@ void Dataset1D::load_data() {
         this->train_labels.push_back(std::stoi(line));
     }
 
-    std::ifstream test_data_file("old_data/fashion_mnist_test_vectors.csv");
+    std::ifstream test_data_file("data/fashion_mnist_test_vectors.csv");
 
     // Load test data
     for (int i = 0; i < this->test_size; i++) {
@@ -80,7 +80,7 @@ void Dataset1D::load_data() {
         this->test_data.push_back(row);
     }
 
-    std::ifstream test_labels_file("old_data/fashion_mnist_test_labels.csv");
+    std::ifstream test_labels_file("data/fashion_mnist_test_labels.csv");
 
     // Load validation labels
     for (int i = 0; i < this->test_size; i++) {
