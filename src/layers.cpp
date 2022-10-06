@@ -15,21 +15,18 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
         this->derivative = leaky_relu_derivative;
     } else if (activation == swish) {
         this->derivative = swish_derivative;
-    } else if (activation == softmax) {
-        this->derivative = softmax_derivative;
     }
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
-    this->gradients =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->errors = std::vector<double>(output_size, 0.0);
-    this->batch_errors = std::vector<double>(output_size, 0.0);
+    // this->batch_errors = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
 
+    // Initialize weights
     for (int i = 0; i < output_size; i++) {
         for (int j = 0; j < input_size + 1; j++) {
-            if (activation == sigmoid || activation == softmax) {
+            if (activation == sigmoid) {
                 // Initialize weights with random values with uniform distribution
                 // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
                 this->weights[i][j] =
@@ -45,23 +42,11 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 std::vector<double> DenseLayer::predict(std::vector<double> input) {
     // #pragma omp parallel for
     // Calculate output for each neuron
-    for (int i = 0; i < this->output_size; i++) {
-        this->outputs[i] = this->weights[i][0];
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[n_i] = this->weights[n_i][0];
 
-        for (int j = 0; j < this->input_size; j++) {
-            this->outputs[i] += this->weights[i][j + 1] * input[j];
-        }
-    }
-
-    // Apply softmax preprocess
-    if (this->activation == softmax) {
-        double sum = 0;
-        for (int i = 0; i < outputs.size(); i++) {
-            sum += exp(outputs[i]);
-        }
-
-        for (int i = 0; i < outputs.size(); i++) {
-            this->outputs[i] = exp(this->outputs[i]) / sum;
+        for (int i = 0; i < this->input_size; i++) {
+            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];
         }
     }
 
@@ -74,30 +59,132 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     return this->outputs;
 }
 
-void DenseLayer::backpropagate(DenseLayer* connected_layer, std::vector<double> outputs,
-                               std::vector<double> target_vector, bool last_layer) {
-    // #pragma omp parallel for
+void DenseLayer::out_errors(std::vector<double> target_vector) {
+    // Calculate errors - MSE
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->errors[n_i] = 0;
-        if (last_layer) {
-            this->errors[n_i] = (outputs[n_i] - target_vector[n_i]);
-        } else {
-            for (int o_i = 0; o_i < connected_layer->output_size; o_i++) {
-                this->errors[n_i] +=
-                    connected_layer->errors[o_i] * connected_layer->weights[o_i][n_i + 1];
-            }
-        }
+        this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
+    }
 
-        if (this->derivative == softmax_derivative) {
-            double sum = 0;
-            for (int idx = 0; idx < outputs.size(); idx++) {
-                sum += exp(outputs[idx]);
-            }
-            this->outputs[n_i] = exp(this->outputs[n_i]) / sum;
-        }
+    // Apply activation function
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->errors[n_i] *= this->derivative(this->outputs[n_i]);
     }
 }
+
+void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
+    // #pragma omp parallel for
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] = 0;
+
+        for (int o_i = 0; o_i < connected_layer->output_size; o_i++) {
+            this->errors[n_i] += connected_layer->errors[o_i] * connected_layer->weights[o_i][n_i + 1];
+        }
+    }
+
+    // Apply activation function
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] *= this->derivative(this->outputs[n_i]);
+    }
+}
+
+void DenseLayer::update_weights(std::vector<double> input, double learning_rate) {
+    // #pragma omp parallel for
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
+            this->weights[n_i][w_i] -= this->errors[n_i] * learning_rate * input[w_i - 1];
+        }
+        this->weights[n_i][0] -= this->errors[n_i] * learning_rate;
+    }
+}
+
+SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
+    this->input_size = input_size;
+    this->output_size = output_size;
+
+    this->activation = softmax;
+    this->derivative = softmax_derivative;
+
+    this->weights =
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
+    this->errors = std::vector<double>(output_size, 0.0);
+    this->outputs = std::vector<double>(output_size, 0.0);
+}
+
+std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
+    // #pragma omp parallel for
+    // Calculate output for each neuron
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[n_i] = input[n_i];
+    }
+
+    // Apply softmax preprocess
+    double sum = 0;
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        sum += exp(this->outputs[n_i]);
+    }
+
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[n_i] = exp(this->outputs[n_i]) / sum;
+    }
+
+    // #pragma omp parallel for
+    // Apply activation function
+    for (int i = 0; i < this->output_size; i++) {
+        this->outputs[i] = this->activation(this->outputs[i]);
+    }
+
+    return this->outputs;
+}
+
+void SoftmaxLayer::out_errors(std::vector<double> target_vector) {
+    // Calculate errors - MSE
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
+    }
+
+    // Softmax preprocess
+    double sum = 0;
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        sum += exp(this->outputs[n_i]);
+    }
+
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[n_i] = exp(this->outputs[n_i]) / sum;
+    }
+
+    // Apply activation function
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] *= this->derivative(this->outputs[n_i]);
+    }
+}
+
+void SoftmaxLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
+    // #pragma omp parallel for
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] = 0;
+
+        for (int o_i = 0; o_i < connected_layer->output_size; o_i++) {
+            this->errors[n_i] += connected_layer->errors[o_i] * connected_layer->weights[o_i][n_i + 1];
+        }
+    }
+
+    // Softmax preprocess
+    double sum = 0;
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        sum += exp(this->outputs[n_i]);
+    }
+
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[n_i] = exp(this->outputs[n_i]) / sum;
+    }
+
+    // Apply activation function
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] *= this->derivative(this->outputs[n_i]);
+    }
+}
+
+void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rate) { return; }
 
 // Random value from normal distribution using Box-Muller transform
 double randn() {

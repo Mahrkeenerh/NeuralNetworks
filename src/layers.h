@@ -3,24 +3,46 @@
 
 #include <vector>
 
-class DenseLayer {
+class Layer {
    public:
     int input_size, output_size;
 
-    DenseLayer(int input_size, int output_size, double (*activation)(double));
-
-    std::vector<double> predict(std::vector<double> input);
-    void backpropagate(DenseLayer* connected_layer, std::vector<double> outputs,
-                       std::vector<double> target_vector, bool last_layer = false);
+    virtual std::vector<double> predict(std::vector<double> input) { return this->outputs; }
+    virtual void out_errors(std::vector<double> target_vector) {}
+    virtual void backpropagate(Layer* connected_layer, std::vector<double> target_vector) {}
+    virtual void update_weights(std::vector<double> input_data, double learning_rate) {}
 
     std::vector<std::vector<double>> weights;
-    std::vector<std::vector<double>> gradients;
     std::vector<double> errors;
-    std::vector<double> batch_errors;
     std::vector<double> outputs;
 
     double (*activation)(double);
     double (*derivative)(double);
+};
+
+class DenseLayer : public Layer {
+   public:
+    DenseLayer(int input_size, int output_size, double (*activation)(double));
+
+    std::vector<double> predict(std::vector<double> input) override;
+    void out_errors(std::vector<double> target_vector) override;
+    void backpropagate(Layer* connected_layer, std::vector<double> target_vector) override;
+    void update_weights(std::vector<double> input_data, double learning_rate) override;
+
+    // std::vector<std::vector<double>> weights;
+    // std::vector<double> errors;
+    // std::vector<double> batch_errors;
+    // std::vector<double> outputs;
+};
+
+class SoftmaxLayer : public Layer {
+   public:
+    SoftmaxLayer(int input_size, int output_size);
+
+    std::vector<double> predict(std::vector<double> input) override;
+    void out_errors(std::vector<double> target_vector) override;
+    void backpropagate(Layer* connected_layer, std::vector<double> target_vector) override;
+    void update_weights(std::vector<double> input_data, double learning_rate) override;
 };
 
 double randn();
