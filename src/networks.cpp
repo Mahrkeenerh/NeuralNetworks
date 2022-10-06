@@ -120,7 +120,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
     }
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size,
+/*void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size,
                        bool verbose) {
     clock_t train_start = clock();
 
@@ -219,7 +219,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int 
                       << std::endl;
         }
     }
-}
+}*/
 
 double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
     int correct = 0;

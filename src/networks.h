@@ -14,12 +14,9 @@ class DenseNetwork {
     void backpropagate(std::vector<double> outputs, std::vector<double> target_vector);
     void update_weights(std::vector<double> input_data, double learning_rate);
     void fit(Dataset1D dataset, int epochs, double learning_rate, bool verbose);
-    void fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size, bool verbose);
+    // void fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size, bool verbose);
 
-    double error(std::vector<std::vector<double>> inputs, std::vector<int> targets);
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
-    std::vector<double> output_errors(std::vector<double> inputs, int target,
-                                      double (*derivative)(double));
 
    private:
     std::vector<int> layer_sizes;
