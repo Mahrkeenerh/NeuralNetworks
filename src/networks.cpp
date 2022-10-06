@@ -11,9 +11,10 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     // for (int i = 0; i < layer_sizes.size() - 2; i++) {
     //     this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
     // }
-    this->layers.push_back(new DropoutLayer(layer_sizes[0], 0.5));
+    // this->layers.push_back(new DropoutLayer(layer_sizes[0], 0.5));
+    this->layers.push_back(new NoiseLayer(layer_sizes[0], 0.5, 0.1));
     this->layers.push_back(new DenseLayer(layer_sizes[0], layer_sizes[1], relu));
-    this->layers.push_back(new DenseLayer(layer_sizes[1], layer_sizes[1], relu));
+    // this->layers.push_back(new DenseLayer(layer_sizes[1], layer_sizes[1], relu));
 
     // Create output layer
     this->layers.push_back(new DenseLayer(layer_sizes[layer_sizes.size() - 2],
