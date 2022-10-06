@@ -8,9 +8,12 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     this->layer_sizes = layer_sizes;
 
     // Create layers
-    for (int i = 0; i < layer_sizes.size() - 2; i++) {
-        this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
-    }
+    // for (int i = 0; i < layer_sizes.size() - 2; i++) {
+    //     this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
+    // }
+    this->layers.push_back(new DropoutLayer(layer_sizes[0], 0.5));
+    this->layers.push_back(new DenseLayer(layer_sizes[0], layer_sizes[1], relu));
+    this->layers.push_back(new DenseLayer(layer_sizes[1], layer_sizes[1], relu));
 
     // Create output layer
     this->layers.push_back(new DenseLayer(layer_sizes[layer_sizes.size() - 2],
@@ -24,6 +27,16 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
 
     for (int i = 0; i < this->layers.size(); i++) {
         output = this->layers[i]->predict(output);
+    }
+
+    return output;
+}
+
+std::vector<double> DenseNetwork::forwardpropagate(std::vector<double> input) {
+    std::vector<double> output = input;
+
+    for (int i = 0; i < this->layers.size(); i++) {
+        output = this->layers[i]->forwardpropagate(output);
     }
 
     return output;
@@ -91,7 +104,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
                           << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
             }
 
-            std::vector<double> outputs = this->predict(dataset.train_data[idxs[i]]);
+            std::vector<double> outputs = this->forwardpropagate(dataset.train_data[idxs[i]]);
             std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
             target_vector[dataset.train_labels[idxs[i]]] = 1;
 

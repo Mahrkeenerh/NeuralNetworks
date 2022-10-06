@@ -3,6 +3,7 @@
 
 #include "BaseLayer.h"
 #include "DenseLayer.h"
+#include "DropoutLayer.h"
 #include "SoftmaxLayer.h"
 
 #endif

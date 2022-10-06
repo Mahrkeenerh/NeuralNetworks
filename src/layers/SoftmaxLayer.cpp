@@ -86,5 +86,3 @@ void SoftmaxLayer::backpropagate(Layer* connected_layer, std::vector<double> tar
         this->errors[n_i] *= this->derivative(this->outputs[n_i]);
     }
 }
-
-void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rate) { return; }

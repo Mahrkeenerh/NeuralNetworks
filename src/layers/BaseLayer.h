@@ -9,6 +9,7 @@ class Layer {
     int input_size, output_size;
 
     virtual std::vector<double> predict(std::vector<double> input) { return this->outputs; }
+    virtual std::vector<double> forwardpropagate(std::vector<double> input) { return this->outputs; }
     virtual void out_errors(std::vector<double> target_vector) {}
     virtual void backpropagate(Layer* connected_layer, std::vector<double> target_vector) {}
     virtual void update_weights(std::vector<double> input_data, double learning_rate) {}
