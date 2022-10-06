@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "datasets.h"
-#include "layers.h"
+#include "layers/layers.h"
 
 class DenseNetwork {
    public:

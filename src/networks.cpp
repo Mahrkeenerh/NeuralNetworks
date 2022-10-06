@@ -8,15 +8,15 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     this->layer_sizes = layer_sizes;
 
     // Create layers
-    for (int i = 0; i < layer_sizes.size() - 1; i++) {
+    for (int i = 0; i < layer_sizes.size() - 2; i++) {
         this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
     }
 
     // Create output layer
-    // this->layers.push_back(new DenseLayer(layer_sizes[layer_sizes.size() - 2],
-    //                                       layer_sizes[layer_sizes.size() - 1], sigmoid));
-    this->layers.push_back(
-        new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
+    this->layers.push_back(new DenseLayer(layer_sizes[layer_sizes.size() - 2],
+                                          layer_sizes[layer_sizes.size() - 1], sigmoid));
+    // this->layers.push_back(
+    //     new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
 }
 
 std::vector<double> DenseNetwork::predict(std::vector<double> input) {
