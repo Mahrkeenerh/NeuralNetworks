@@ -1,5 +1,7 @@
 #include "networks.h"
 
+#include <omp.h>
+
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -68,11 +70,10 @@ void DenseNetwork::update_weights(std::vector<double> input_data, double learnin
 }
 
 void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool verbose) {
-    clock_t train_start = clock();
+    double train_start = omp_get_wtime();
 
     for (int epoch = 0; epoch < epochs; epoch++) {
-        clock_t epoch_start;
-        epoch_start = clock();
+        double epoch_start = omp_get_wtime();
 
         // Visual loading bar
         int progress, data_padding;
@@ -96,8 +97,8 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
                 double acc = (double)correct / (i + 1);
                 data_padding =
                     std::to_string(dataset.train_size).length() - std::to_string(i + 1).length() + 1;
-                double epoch_eta = (double)(clock() - epoch_start) / CLOCKS_PER_SEC / (i + 1) *
-                                   (dataset.train_size - i - 1);
+                double epoch_eta =
+                    (omp_get_wtime() - epoch_start) / (i + 1) * (dataset.train_size - i - 1);
 
                 std::cout << "\033[F" << std::string(data_padding, ' ') << i + 1 << "/"
                           << dataset.train_size << " [" << std::string(progress - 1, '=') << ">"
@@ -123,11 +124,11 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
         if (verbose) {
             double train_accuracy = (double)correct / dataset.train_size;
             double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
-            clock_t epoch_end = clock();
+            double epoch_end = omp_get_wtime();
 
             int epoch_padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
-            double epoch_time = (double)(epoch_end - epoch_start) / CLOCKS_PER_SEC;
-            double elapsed_time = (double)(epoch_end - train_start) / CLOCKS_PER_SEC;
+            double epoch_time = epoch_end - epoch_start;
+            double elapsed_time = epoch_end - train_start;
             double eta_s = (elapsed_time / (epoch + 1)) * (epochs - epoch - 1);
 
             std::cout << "\033[FEpoch " << std::string(epoch_padding, ' ') << epoch + 1 << "/" << epochs

@@ -1,3 +1,5 @@
+#include <omp.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -79,13 +81,14 @@ int main(int argc, char *argv[]) {
     std::cout << std::setprecision(4);
 
     // measure time
-    clock_t start, end;
+    double start, end;
 
     for (int i = 0; i < 3; i++) {
-        start = clock();
+        start = omp_get_wtime();
         mnist_net(epochs, learning_rate, batch_size);
-        end = clock();
-        std::cout << "Time: " << (double)(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+        end = omp_get_wtime();
+
+        std::cout << "Time: " << end - start << "s" << std::endl;
     }
 
     return 0;
