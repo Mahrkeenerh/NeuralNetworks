@@ -12,15 +12,6 @@ DropoutLayer::DropoutLayer(int output_size, double dropout_chance) {
     this->outputs = std::vector<double>(output_size, 0.0);
 }
 
-std::vector<double> DropoutLayer::predict(std::vector<double> input) {
-    // Calculate output for each neuron
-    for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->outputs[n_i] = input[n_i];
-    }
-
-    return this->outputs;
-}
-
 std::vector<double> DropoutLayer::forwardpropagate(std::vector<double> input) {
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i++) {
@@ -33,9 +24,3 @@ std::vector<double> DropoutLayer::forwardpropagate(std::vector<double> input) {
 
     return this->outputs;
 };
-
-void DropoutLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
-    for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->errors[n_i] = connected_layer->errors[n_i];
-    }
-}
