@@ -29,8 +29,8 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
                 // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
                 this->weights[i][j] =
                     (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
-            } else if (activation == relu || activation == leaky_relu || activation == swish) {
-                // He initialization with normal distribution
+            } else {
+                // Initialize with normal distribution
                 this->weights[i][j] = randn() * sqrt(2.0 / input_size);
             }
         }
@@ -59,9 +59,14 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
 
 void DenseLayer::out_errors(std::vector<double> target_vector) {
     // Calculate errors - MSE
-    for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
-    }
+     for (int n_i = 0; n_i < this->output_size; n_i++) {
+         this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
+     }
+
+    // Calculate errors - Cross entropy
+    //for (int n_i = 0; n_i < this->output_size; n_i++) {
+     //   this->errors[n_i] = - (target_vector[n_i] * log(this->outputs[n_i]) + (1 - target_vector[n_i]) * log(1 - this->outputs[n_i]));
+    //}
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
