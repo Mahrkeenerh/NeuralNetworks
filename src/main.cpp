@@ -6,6 +6,7 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
+#include <omp.h>
 
 #include "datasets.h"
 #include "networks.h"
@@ -35,7 +36,7 @@ void xor_net() {
 
 void mnist_net(int epochs, double learning_rate, int batch_size) {
     Dataset1D dataset;
-    DenseNetwork network({784, 128, 10});
+    DenseNetwork network({784, 128, 64, 10});
 
     network.fit(dataset, epochs, learning_rate, true);
     // network.fit(dataset, epochs, learning_rate, batch_size, true);
@@ -87,8 +88,7 @@ int main(int argc, char *argv[]) {
         start = omp_get_wtime();
         mnist_net(epochs, learning_rate, batch_size);
         end = omp_get_wtime();
-
-        std::cout << "Time: " << end - start << "s" << std::endl;
+        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
     }
 
     return 0;
