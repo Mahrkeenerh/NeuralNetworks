@@ -1,5 +1,7 @@
 #include "DenseLayer.h"
 
+#include <iostream>
+
 DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
     this->output_size = output_size;
@@ -20,6 +22,18 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
     this->errors = std::vector<double>(output_size, 0.0);
     // this->batch_errors = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
+
+    // Momentum value
+    this->beta1 = 0.2;
+    this->weight_delta = std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+
+    // Adam settings
+    //this->momentum = std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+    //this->variance = std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+    //this->beta1 = 0.5;
+    //this->beta2 = 0.999;
+    //this->eta = 0.01;
+    //this->epsilon = 1e-8;
 
     // Initialize weights
     for (int i = 0; i < output_size; i++) {
@@ -59,14 +73,9 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
 
 void DenseLayer::out_errors(std::vector<double> target_vector) {
     // Calculate errors - MSE
-     for (int n_i = 0; n_i < this->output_size; n_i++) {
-         this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
-     }
-
-    // Calculate errors - Cross entropy
-    //for (int n_i = 0; n_i < this->output_size; n_i++) {
-     //   this->errors[n_i] = - (target_vector[n_i] * log(this->outputs[n_i]) + (1 - target_vector[n_i]) * log(1 - this->outputs[n_i]));
-    //}
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
+    }
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
@@ -90,12 +99,40 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> targe
     }
 }
 
-void DenseLayer::update_weights(std::vector<double> input, double learning_rate) {
+void DenseLayer::update_weights(std::vector<double> input, double learning_rate, int t) {
     // #pragma omp parallel for
+    double update;
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        update = this->errors[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+        this->weights[n_i][0] -= update;
+        this->weight_delta[n_i][0] = update;
+
+        for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
+            update = this->errors[n_i] * learning_rate * input[w_i - 1] + this->beta1 * this->weight_delta[n_i][w_i];
+            this->weights[n_i][w_i] -= update;
+            this->weight_delta[n_i][w_i] = update;
+        }
+    }
+
+    // Adam
+    /*double m_correction, v_correction, grad;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
-            this->weights[n_i][w_i] -= this->errors[n_i] * learning_rate * input[w_i - 1];
+            grad = this->errors[n_i] * input[w_i - 1];
+            this->momentum[n_i][w_i] = this->beta1 * this->momentum[n_i][w_i] + (1 - this->beta1) * grad;
+            this->variance[n_i][w_i] = this->beta2 * this->variance[n_i][w_i] + (1 - this->beta2) * pow(grad, 2);
+            m_correction = this->momentum[n_i][w_i] / (1 - pow(this->beta1, t));
+            v_correction = this->variance[n_i][w_i] / (1 - pow(this->beta2, t));
+
+            this->weights[n_i][w_i] -= learning_rate * this->eta * m_correction / (sqrt(v_correction) + this->epsilon);
+            //std::cout << std::endl << n_i << " " << w_i << " " << this->weights[n_i][w_i] << std::endl;
         }
-        this->weights[n_i][0] -= this->errors[n_i] * learning_rate;
-    }
+        // Bias
+        this->momentum[n_i][0] = this->beta1 * this->momentum[n_i][0] + (1 - this->beta1) * this->errors[n_i];   
+        this->variance[n_i][0] = this->beta2 * this->variance[n_i][0] + (1 - this->beta2) * this->errors[n_i];
+        m_correction = this->momentum[n_i][0] / (1 - pow(this->beta1, t));
+        v_correction = this->variance[n_i][0] / (1 - pow(this->beta2, t));
+
+        this->weights[n_i][0] -= learning_rate * this->eta * m_correction / (sqrt(v_correction) + this->epsilon);
+    }*/
 }
