@@ -1,5 +1,6 @@
 #include "datasets.h"
 
+#include <cmath>
 #include <fstream>
 #include <sstream>
 
@@ -14,7 +15,7 @@ Dataset1D::Dataset1D(std::vector<std::vector<double>> data, std::vector<int> lab
     this->test_size = data.size();
 }
 
-Dataset1D::Dataset1D(int train_size, int test_size) {
+Dataset1D::Dataset1D(int train_size, int test_size, bool normalize) {
     this->train_size = train_size;
     this->test_size = test_size;
 
@@ -35,6 +36,9 @@ Dataset1D::Dataset1D(int train_size, int test_size) {
     }
 
     load_data();
+    if (normalize) {
+        normalize_data();
+    }
 }
 
 void Dataset1D::load_data() {
@@ -86,5 +90,43 @@ void Dataset1D::load_data() {
     for (int i = 0; i < this->test_size; i++) {
         std::getline(test_labels_file, line);
         this->test_labels.push_back(std::stoi(line));
+    }
+}
+
+void Dataset1D::normalize_data() {
+    // Calculate mean of each feature
+    std::vector<double> mean_vector;
+    for (int i = 0; i < this->train_data[0].size(); i++) {
+        double sum = 0;
+        for (int j = 0; j < this->train_data.size(); j++) {
+            sum += this->train_data[j][i];
+        }
+
+        mean_vector.push_back(sum / this->train_data.size());
+    }
+
+    // Calculate standard deviation of each feature
+    std::vector<double> std_vector;
+    for (int i = 0; i < this->train_data[0].size(); i++) {
+        double sum = 0;
+        for (int j = 0; j < this->train_data.size(); j++) {
+            sum += pow(this->train_data[j][i] - mean_vector[i], 2);
+        }
+
+        std_vector.push_back(sqrt(sum / this->train_data.size()));
+    }
+
+    // Normalize training data
+    for (int i = 0; i < this->train_data.size(); i++) {
+        for (int j = 0; j < this->train_data[i].size(); j++) {
+            this->train_data[i][j] = (this->train_data[i][j] - mean_vector[j]) / std_vector[j];
+        }
+    }
+
+    // Normalize test data
+    for (int i = 0; i < this->test_data.size(); i++) {
+        for (int j = 0; j < this->test_data[i].size(); j++) {
+            this->test_data[i][j] = (this->test_data[i][j] - mean_vector[j]) / std_vector[j];
+        }
     }
 }
