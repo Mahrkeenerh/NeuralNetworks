@@ -83,7 +83,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
             data_padding = std::to_string(dataset.train_size).length() - std::to_string(0).length() + 1;
 
             std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size << " ["
-                      << std::string(50, '-') << "]" << std::endl;
+                      << std::string(50, '.') << "]" << std::endl;
         }
 
         // Random idxs
@@ -102,7 +102,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
 
                 std::cout << "\033[F" << std::string(data_padding, ' ') << i + 1 << "/"
                           << dataset.train_size << " [" << std::string(progress - 1, '=') << ">"
-                          << std::string(50 - progress, '-') << "] Train accuracy: " << acc
+                          << std::string(50 - progress, '.') << "] Train accuracy: " << acc
                           << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
             }
 
