@@ -7,16 +7,16 @@
 
 class NoiseLayer : public Layer {
    public:
-    NoiseLayer(int output_size, float noise_chance, float noise_scale = 0.1);
+    NoiseLayer(int output_size, double noise_chance, double noise_scale = 0.1);
 
-    std::vector<float> forwardpropagate(std::vector<float> input) override;
-    void out_errors(std::vector<float> target_vector) override {
+    std::vector<double> forwardpropagate(std::vector<double> input) override;
+    void out_errors(std::vector<double> target_vector) override {
         throw std::runtime_error("NoiseLayer::out_errors() is not valid");
     };
 
    private:
-    float noise_chance;
-    float noise_scale;
+    double noise_chance;
+    double noise_scale;
 };
 
 #endif

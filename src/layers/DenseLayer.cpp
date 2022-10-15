@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(float)) {
+DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
     this->output_size = output_size;
     this->activation = activation;
@@ -18,21 +18,21 @@ DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(floa
     }
 
     this->weights =
-        std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
-    this->errors = std::vector<float>(output_size, 0.0);
-    // this->batch_errors = std::vector<float>(output_size, 0.0);
-    this->outputs = std::vector<float>(output_size, 0.0);
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+    this->errors = std::vector<double>(output_size, 0.0);
+    // this->batch_errors = std::vector<double>(output_size, 0.0);
+    this->outputs = std::vector<double>(output_size, 0.0);
 
     // Momentum value
     this->beta1 = 0.3;
     this->weight_delta =
-        std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
 
     // Adam settings
     /* this->momentum =
-        std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->variance =
-        std::vector<std::vector<float>>(output_size, std::vector<float>(input_size + 1, 0.0));
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->beta1 = 0.9;
     this->beta2 = 0.999;
     this->eta = 0.01;
@@ -45,7 +45,7 @@ DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(floa
                 // Initialize weights with random values with uniform distribution
                 // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
                 this->weights[i][j] =
-                    (rand() / (float)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
+                    (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
             } else {
                 // Initialize with normal distribution
                 this->weights[i][j] = randn() * sqrt(2.0 / input_size);
@@ -54,7 +54,7 @@ DenseLayer::DenseLayer(int input_size, int output_size, float (*activation)(floa
     }
 }
 
-std::vector<float> DenseLayer::predict(std::vector<float> input) {
+std::vector<double> DenseLayer::predict(std::vector<double> input) {
     // #pragma omp parallel for
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i++) {
@@ -74,7 +74,7 @@ std::vector<float> DenseLayer::predict(std::vector<float> input) {
     return this->outputs;
 }
 
-void DenseLayer::out_errors(std::vector<float> target_vector) {
+void DenseLayer::out_errors(std::vector<double> target_vector) {
     // Calculate errors - MSE
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]);
@@ -86,7 +86,7 @@ void DenseLayer::out_errors(std::vector<float> target_vector) {
     }
 }
 
-void DenseLayer::backpropagate(Layer* connected_layer, std::vector<float> target_vector) {
+void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
     // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->errors[n_i] = 0;
@@ -102,9 +102,9 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<float> target
     }
 }
 
-void DenseLayer::update_weights(std::vector<float> input, float learning_rate, int t) {
+void DenseLayer::update_weights(std::vector<double> input, double learning_rate, int t) {
     // #pragma omp parallel for
-    float update;
+    double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         update = this->errors[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
         this->weights[n_i][0] -= update;
@@ -119,7 +119,7 @@ void DenseLayer::update_weights(std::vector<float> input, float learning_rate, i
     }
 
     // Adam
-    /* float grad, alpha;
+    /* double grad, alpha;
     #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         //#pragma omp parallel for

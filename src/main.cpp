@@ -11,7 +11,7 @@
 #include "networks.h"
 
 void xor_net() {
-    std::vector<std::vector<float>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    std::vector<std::vector<double>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
     std::vector<int> target_data = {0, 1, 1, 0};
     Dataset1D dataset = Dataset1D(input_data, target_data);
 
@@ -22,7 +22,7 @@ void xor_net() {
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
-        std::vector<float> output = network.predict(input_data[i]);
+        std::vector<double> output = network.predict(input_data[i]);
 
         int result = output[0] > output[1] ? 0 : 1;
 
@@ -33,7 +33,7 @@ void xor_net() {
     }
 }
 
-void mnist_net(int epochs, float learning_rate, int batch_size) {
+void mnist_net(int epochs, double learning_rate, int batch_size) {
     Dataset1D dataset;
     DenseNetwork network({784, 128, 64, 10});
 
@@ -42,10 +42,10 @@ void mnist_net(int epochs, float learning_rate, int batch_size) {
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
-        std::vector<float> output = network.predict(dataset.test_data[i]);
+        std::vector<double> output = network.predict(dataset.test_data[i]);
 
         int result = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
-        float confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
+        double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
 
         std::cout << "i: " << i;
         std::cout << " | Target: " << dataset.test_labels[i];
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
     // Get epochs and learning rate from command line arguments
     int epochs = 10;
-    float learning_rate = 0.01;
+    double learning_rate = 0.01;
     int batch_size = 1;
     if (argc > 1) {
         epochs = std::stoi(argv[1]);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     // std::streambuf *coutbuf = std::cout.rdbuf();
     // std::cout.rdbuf(out.rdbuf());
 
-    // Set float precision
+    // Set double precision
     std::cout << std::fixed;
     std::cout << std::setprecision(4);
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
         start = omp_get_wtime();
         mnist_net(epochs, learning_rate, batch_size);
         end = omp_get_wtime();
-        std::cout << "Time: " << (float)(end - start) << "s" << std::endl;
+        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
     }
 
     return 0;
