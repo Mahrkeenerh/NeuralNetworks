@@ -13,7 +13,6 @@ class DropoutLayer : public Layer {
     void out_errors(std::vector<float> target_vector) override {
         throw std::runtime_error("DropoutLayer::out_errors() is not valid");
     };
-    void update_weights(std::vector<float> input_data, float learning_rate) override { return; };
 
    private:
     float dropout_chance;
