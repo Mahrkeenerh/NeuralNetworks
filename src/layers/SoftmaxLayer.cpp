@@ -46,20 +46,12 @@ std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
         this->outputs[n_i] = this->weights[n_i][0];
 
         for (int i = 0; i < this->input_size; i++) {
-            if (! std::abs(std::isnan(this->outputs[n_i] + this->weights[n_i][i + 1] * input[i]))) {
-                this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];
-            }
-
-            //std::cout << std::endl << this->outputs[n_i] << std::isnan(this->outputs[n_i]);
-            
+            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];            
         }
         sum += exp(this->outputs[n_i] - max);
-        //std::cout << std::endl << sum;
     }
-    //std::cout << std::endl << sum;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->outputs[n_i] = exp(this->outputs[n_i] - max) / sum;
-        //std::cout << std::endl << this->outputs[n_i];
     }
 
     return this->outputs;
