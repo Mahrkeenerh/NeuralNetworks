@@ -1,4 +1,4 @@
-#include "SoftmaxLayer.h"
+#include "SoftmaxLayer.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -46,7 +46,7 @@ std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
         this->outputs[n_i] = this->weights[n_i][0];
 
         for (int i = 0; i < this->input_size; i++) {
-            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];            
+            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];
         }
         sum += exp(this->outputs[n_i] - max);
     }

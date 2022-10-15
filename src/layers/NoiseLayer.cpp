@@ -1,4 +1,4 @@
-#include "NoiseLayer.h"
+#include "NoiseLayer.hpp"
 
 NoiseLayer::NoiseLayer(int output_size, double noise_chance, double noise_scale) {
     this->input_size = output_size;

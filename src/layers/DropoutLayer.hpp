@@ -1,9 +1,9 @@
-#ifndef DropoutLayer_h
-#define DropoutLayer_h
+#ifndef DropoutLayer_hpp
+#define DropoutLayer_hpp
 
 #include <stdexcept>
 
-#include "BaseLayer.h"
+#include "BaseLayer.hpp"
 
 class DropoutLayer : public Layer {
    public:

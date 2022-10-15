@@ -1,4 +1,4 @@
-#include "DenseLayer.h"
+#include "DenseLayer.hpp"
 
 #include <iostream>
 

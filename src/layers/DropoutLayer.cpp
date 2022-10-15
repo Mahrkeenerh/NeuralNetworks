@@ -1,4 +1,4 @@
-#include "DropoutLayer.h"
+#include "DropoutLayer.hpp"
 
 DropoutLayer::DropoutLayer(int output_size, double dropout_chance) {
     this->input_size = output_size;

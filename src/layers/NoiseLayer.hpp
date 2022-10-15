@@ -1,9 +1,9 @@
-#ifndef NoiseLayer_h
-#define NoiseLayer_h
+#ifndef NoiseLayer_hpp
+#define NoiseLayer_hpp
 
 #include <stdexcept>
 
-#include "BaseLayer.h"
+#include "BaseLayer.hpp"
 
 class NoiseLayer : public Layer {
    public:

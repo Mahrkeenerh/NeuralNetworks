@@ -1,11 +1,11 @@
-#ifndef SoftmaxLayer_h
-#define SoftmaxLayer_h
+#ifndef DenseLayer_hpp
+#define DenseLayer_hpp
 
-#include "BaseLayer.h"
+#include "BaseLayer.hpp"
 
-class SoftmaxLayer : public Layer {
+class DenseLayer : public Layer {
    public:
-    SoftmaxLayer(int input_size, int output_size);
+    DenseLayer(int input_size, int output_size, double (*activation)(double));
 
     std::vector<std::vector<double>> momentum;
     std::vector<std::vector<double>> variance;

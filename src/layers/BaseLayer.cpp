@@ -1,4 +1,4 @@
-#include "BaseLayer.h"
+#include "BaseLayer.hpp"
 
 // Random value from normal distribution using Box-Muller transform
 double randn() {

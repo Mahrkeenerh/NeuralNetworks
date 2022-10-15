@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "datasets.h"
-#include "layers/layers.h"
+#include "datasets.hpp"
+#include "layers/layers.hpp"
 
 class DenseNetwork {
    public:

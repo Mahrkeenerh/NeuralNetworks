@@ -1,5 +1,5 @@
-#ifndef BaseLayer_h
-#define BaseLayer_h
+#ifndef BaseLayer_hpp
+#define BaseLayer_hpp
 
 #include <cmath>
 #include <vector>

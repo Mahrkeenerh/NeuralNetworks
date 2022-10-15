@@ -1,5 +1,5 @@
-#ifndef datasets_h
-#define datasets_h
+#ifndef datasets_hpp
+#define datasets_hpp
 
 #include <vector>
 

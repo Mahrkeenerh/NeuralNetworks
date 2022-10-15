@@ -7,8 +7,8 @@
 #include <numeric>
 #include <vector>
 
-#include "datasets.h"
-#include "networks.h"
+#include "datasets.hpp"
+#include "networks.hpp"
 
 void xor_net() {
     std::vector<std::vector<double>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
@@ -35,7 +35,7 @@ void xor_net() {
 
 void mnist_net(int epochs, double learning_rate, int batch_size) {
     Dataset1D dataset;
-    DenseNetwork network({784, 128, 64, 10});
+    DenseNetwork network({784, 128, 10});
 
     network.fit(dataset, epochs, learning_rate, true);
     // network.fit(dataset, epochs, learning_rate, batch_size, true);

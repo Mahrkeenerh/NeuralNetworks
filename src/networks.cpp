@@ -1,4 +1,4 @@
-#include "networks.h"
+#include "networks.hpp"
 
 #include <omp.h>
 
