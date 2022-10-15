@@ -8,7 +8,7 @@ class Layer {
    public:
     int input_size, output_size;
 
-    virtual std::vector<double> predict(std::vector<double> input) {
+    virtual std::vector<float> predict(std::vector<float> input) {
         // Calculate output for each neuron
         for (int n_i = 0; n_i < this->output_size; n_i++) {
             this->outputs[n_i] = input[n_i];
@@ -16,40 +16,40 @@ class Layer {
 
         return this->outputs;
     }
-    virtual std::vector<double> forwardpropagate(std::vector<double> input) { return this->outputs; }
+    virtual std::vector<float> forwardpropagate(std::vector<float> input) { return this->outputs; }
 
-    virtual void out_errors(std::vector<double> target_vector) {}
-    virtual void backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
+    virtual void out_errors(std::vector<float> target_vector) {}
+    virtual void backpropagate(Layer* connected_layer, std::vector<float> target_vector) {
         for (int n_i = 0; n_i < this->output_size; n_i++) {
             this->errors[n_i] = connected_layer->errors[n_i];
         }
     }
 
-    virtual void update_weights(std::vector<double> input_data, double learning_rate) {}
+    virtual void update_weights(std::vector<float> input_data, float learning_rate) {}
 
-    std::vector<std::vector<double>> weights;
-    std::vector<double> errors;
-    std::vector<double> outputs;
+    std::vector<std::vector<float>> weights;
+    std::vector<float> errors;
+    std::vector<float> outputs;
 
-    double (*activation)(double);
-    double (*derivative)(double);
+    float (*activation)(float);
+    float (*derivative)(float);
 };
 
-double randn();
+float randn();
 
-double sigmoid(double x);
-double sigmoid_derivative(double x);
+float sigmoid(float x);
+float sigmoid_derivative(float x);
 
-double relu(double x);
-double relu_derivative(double x);
+float relu(float x);
+float relu_derivative(float x);
 
-double leaky_relu(double x);
-double leaky_relu_derivative(double x);
+float leaky_relu(float x);
+float leaky_relu_derivative(float x);
 
-double swish(double x);
-double swish_derivative(double x);
+float swish(float x);
+float swish_derivative(float x);
 
-double softmax(double x);
-double softmax_derivative(double x);
+float softmax(float x);
+float softmax_derivative(float x);
 
 #endif

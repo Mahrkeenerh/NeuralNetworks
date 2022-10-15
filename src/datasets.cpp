@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-Dataset1D::Dataset1D(std::vector<std::vector<double>> data, std::vector<int> labels) {
+Dataset1D::Dataset1D(std::vector<std::vector<float>> data, std::vector<int> labels) {
     this->train_data = data;
     this->train_labels = labels;
 
@@ -48,7 +48,7 @@ void Dataset1D::load_data() {
 
     // Load training data
     for (int i = 0; i < this->train_size; i++) {
-        std::vector<double> row;
+        std::vector<float> row;
         std::string cell;
         std::getline(train_data_file, line);
         std::stringstream line_stream(line);
@@ -72,7 +72,7 @@ void Dataset1D::load_data() {
 
     // Load test data
     for (int i = 0; i < this->test_size; i++) {
-        std::vector<double> row;
+        std::vector<float> row;
         std::string cell;
         std::getline(test_data_file, line);
         std::stringstream line_stream(line);
@@ -95,9 +95,9 @@ void Dataset1D::load_data() {
 
 void Dataset1D::normalize_data() {
     // Calculate mean of each feature
-    std::vector<double> mean_vector;
+    std::vector<float> mean_vector;
     for (int i = 0; i < this->train_data[0].size(); i++) {
-        double sum = 0;
+        float sum = 0;
         for (int j = 0; j < this->train_data.size(); j++) {
             sum += this->train_data[j][i];
         }
@@ -106,9 +106,9 @@ void Dataset1D::normalize_data() {
     }
 
     // Calculate standard deviation of each feature
-    std::vector<double> std_vector;
+    std::vector<float> std_vector;
     for (int i = 0; i < this->train_data[0].size(); i++) {
-        double sum = 0;
+        float sum = 0;
         for (int j = 0; j < this->train_data.size(); j++) {
             sum += pow(this->train_data[j][i] - mean_vector[i], 2);
         }
