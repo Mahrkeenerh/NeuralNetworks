@@ -33,11 +33,11 @@ void xor_net() {
     }
 }
 
-void mnist_net(int epochs, double learning_rate, int batch_size) {
+void mnist_net(int epochs, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
     DenseNetwork network({784, 128, 10});
 
-    network.fit(dataset, epochs, learning_rate, true);
+    network.fit(dataset, epochs, learning_rate_start, learning_rate_end);
     // network.fit(dataset, epochs, learning_rate, batch_size, true);
 
     // Evaluate network
@@ -59,17 +59,21 @@ int main(int argc, char *argv[]) {
 
     // Get epochs and learning rate from command line arguments
     int epochs = 10;
-    double learning_rate = 0.01;
-    int batch_size = 1;
+    double learning_rate_start = 0.001;
+    double learning_rate_end = learning_rate_start / 10;
+    // int batch_size = 1;
     if (argc > 1) {
         epochs = std::stoi(argv[1]);
     }
     if (argc > 2) {
-        learning_rate = std::stod(argv[2]);
+        learning_rate_start = std::stod(argv[2]);
     }
     if (argc > 3) {
-        batch_size = std::stoi(argv[3]);
+        learning_rate_end = std::stod(argv[3]);
     }
+    // if (argc > 3) {
+    //     batch_size = std::stoi(argv[3]);
+    // }
 
     // Redirect cout to file
     // std::ofstream out("output.txt");
@@ -78,14 +82,14 @@ int main(int argc, char *argv[]) {
 
     // Set double precision
     std::cout << std::fixed;
-    std::cout << std::setprecision(4);
+    std::cout << std::setprecision(5);
 
     // measure time
-    clock_t start, end;
+    double start, end;
 
     for (int i = 0; i < 3; i++) {
         start = omp_get_wtime();
-        mnist_net(epochs, learning_rate, batch_size);
+        mnist_net(epochs, learning_rate_start, learning_rate_end);
         end = omp_get_wtime();
         std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
     }

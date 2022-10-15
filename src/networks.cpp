@@ -13,9 +13,6 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     for (int i = 0; i < layer_sizes.size() - 2; i++) {
         this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
     }
-    // this->layers.push_back(new DropoutLayer(layer_sizes[0], 0.5));
-    // this->layers.push_back(new NoiseLayer(layer_sizes[0], 0.5, 0.1));
-    // this->layers.push_back(new DenseLayer(layer_sizes[0], layer_sizes[1], relu));
 
     // Create output layer
     this->layers.push_back(
@@ -50,19 +47,20 @@ void DenseNetwork::backpropagate(std::vector<double> target_vector) {
     }
 }
 
-void DenseNetwork::update_weights(std::vector<double> input_data, double learning_rate, int epoch) {
+void DenseNetwork::update_weights(std::vector<double> input_data, double learning_rate) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
         std::vector<double> l_inputs = (l_i == 0) ? input_data : this->layers[l_i - 1]->outputs;
 
-        this->layers[l_i]->update_weights(l_inputs, learning_rate, epoch);
+        this->layers[l_i]->update_weights(l_inputs, learning_rate);
     }
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool verbose) {
-    clock_t train_start = omp_get_wtime();
+void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start,
+                       double learning_rate_end, bool verbose) {
+    double train_start = omp_get_wtime();
 
     for (int epoch = 0; epoch < epochs; epoch++) {
-        clock_t epoch_start;
+        double epoch_start;
         epoch_start = omp_get_wtime();
 
         // Visual loading bar
@@ -80,6 +78,13 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
         std::vector<int> idxs(dataset.train_size);
         std::iota(idxs.begin(), idxs.end(), 0);
         std::random_shuffle(idxs.begin(), idxs.end());
+
+        double learning_rate = learning_rate_start;
+        if (epochs > 1) {
+            learning_rate =
+                (1 - pow((double)epoch / (epochs - 1), 2)) * (learning_rate_start - learning_rate_end) +
+                learning_rate_end;
+        }
 
         for (int i = 0; i < dataset.train_size; i++) {
             if (verbose && (int)((double)(i + 1) / dataset.train_size * 50) > progress) {
@@ -107,14 +112,14 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
             }
 
             this->backpropagate(target_vector);
-            this->update_weights(dataset.train_data[idxs[i]], learning_rate, epoch);
+            this->update_weights(dataset.train_data[idxs[i]], learning_rate);
         }
 
         // Stats
         if (verbose) {
             double train_accuracy = (double)correct / dataset.train_size;
             double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
-            clock_t epoch_end = omp_get_wtime();
+            double epoch_end = omp_get_wtime();
 
             int epoch_padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
             double epoch_time = (double)(epoch_end - epoch_start);
@@ -123,18 +128,18 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
 
             std::cout << "\033[FEpoch " << std::string(epoch_padding, ' ') << epoch + 1 << "/" << epochs
                       << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
-                      << " | Epoch time: " << epoch_time << "s | ETA: " << eta_s << "s\033[K"
-                      << std::endl;
+                      << " | Learning rate: " << learning_rate << " | Epoch time: " << epoch_time
+                      << "s | ETA: " << eta_s << "s\033[K" << std::endl;
         }
     }
 }
 
 /*void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size,
                        bool verbose) {
-    clock_t train_start = omp_get_wtime();
+    double train_start = omp_get_wtime();
 
     for (int epoch = 0; epoch < epochs; epoch++) {
-        clock_t epoch_start;
+        double epoch_start;
         epoch_start = omp_get_wtime();
 
         // Visual loading bar
@@ -215,7 +220,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, bool
         if (verbose) {
             double train_accuracy = (double)correct / dataset.train_size;
             double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
-            clock_t epoch_end = omp_get_wtime();
+            double epoch_end = omp_get_wtime();
 
             int epoch_padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
             double epoch_time = (double)(epoch_end - epoch_start)  ;

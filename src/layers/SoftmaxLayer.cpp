@@ -22,19 +22,24 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     // Initialize weights
     for (int i = 0; i < output_size; i++) {
         for (int j = 0; j < input_size + 1; j++) {
-            this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+            // He initialization with normal distribution
+            // this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+            // Initialize weights with random values with uniform distribution
+            // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
+            this->weights[i][j] =
+                (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
         }
     }
 
     // Adam settings
-    this->momentum =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
-    this->variance =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
-    this->beta1 = 0.1;
-    this->beta2 = 0.999;
-    this->eta = 0.01;
-    this->epsilon = 1e-8;
+    // this->momentum =
+    //     std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+    // this->variance =
+    //     std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
+    // this->beta1 = 0.1;
+    // this->beta2 = 0.999;
+    // this->eta = 0.01;
+    // this->epsilon = 1e-8;
 }
 
 std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
@@ -75,7 +80,7 @@ void SoftmaxLayer::backpropagate(Layer* connected_layer, std::vector<double> tar
     return;
 }
 
-void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rate, int t) {
+void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rate) {
     // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {

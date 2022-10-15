@@ -25,7 +25,7 @@ class Layer {
         }
     }
 
-    virtual void update_weights(std::vector<double> input_data, double learning_rate, int t) {}
+    virtual void update_weights(std::vector<double> input_data, double learning_rate) {}
 
     std::vector<std::vector<double>> weights;
     std::vector<double> errors;

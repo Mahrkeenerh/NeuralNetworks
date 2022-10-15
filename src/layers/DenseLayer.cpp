@@ -47,7 +47,7 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
                 this->weights[i][j] =
                     (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
             } else {
-                // Initialize with normal distribution
+                // He initialization with normal distribution
                 this->weights[i][j] = randn() * sqrt(2.0 / input_size);
             }
         }
@@ -102,7 +102,7 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> targe
     }
 }
 
-void DenseLayer::update_weights(std::vector<double> input, double learning_rate, int t) {
+void DenseLayer::update_weights(std::vector<double> input, double learning_rate) {
     // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
