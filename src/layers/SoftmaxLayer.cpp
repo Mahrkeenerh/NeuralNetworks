@@ -1,9 +1,6 @@
 #include "SoftmaxLayer.hpp"
 
 #include <algorithm>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
 
 SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     this->input_size = input_size;
@@ -73,11 +70,6 @@ void SoftmaxLayer::out_errors(std::vector<double> target_vector) {
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->errors[n_i] = this->outputs[n_i] - target_vector[n_i];
     }
-}
-
-void SoftmaxLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
-    // #pragma omp parallel for
-    return;
 }
 
 void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rate) {

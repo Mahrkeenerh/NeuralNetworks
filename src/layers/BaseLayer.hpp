@@ -4,6 +4,8 @@
 #include <cmath>
 #include <vector>
 
+#include "../optimizations.hpp"
+
 class Layer {
    public:
     int input_size, output_size;

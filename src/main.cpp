@@ -1,7 +1,6 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -9,6 +8,7 @@
 
 #include "datasets.hpp"
 #include "networks.hpp"
+#include "optimizations.hpp"
 
 void xor_net() {
     std::vector<std::vector<double>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     // measure time
     double start, end;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 10; i++) {
         start = omp_get_wtime();
         mnist_net(epochs, learning_rate_start, learning_rate_end);
         end = omp_get_wtime();

@@ -1,7 +1,5 @@
 #include "DenseLayer.hpp"
 
-#include <iostream>
-
 DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
     this->output_size = output_size;
@@ -57,11 +55,15 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 std::vector<double> DenseLayer::predict(std::vector<double> input) {
     // #pragma omp parallel for
     // Calculate output for each neuron
-    for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->outputs[n_i] = this->weights[n_i][0];
+    for (int n_i = 0; n_i < this->output_size; n_i += consts::MAT_MAX) {
+        for (int n_j = 0; n_j < consts::MAT_MAX && n_i + n_j < this->output_size; n_j++) {
+            this->outputs[n_i + n_j] = this->weights[n_i + n_j][0];
+        }
 
         for (int i = 0; i < this->input_size; i++) {
-            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];
+            for (int n_j = 0; n_j < consts::MAT_MAX && n_i + n_j < this->output_size; n_j++) {
+                this->outputs[n_i + n_j] += this->weights[n_i + n_j][i + 1] * input[i];
+            }
         }
     }
 
