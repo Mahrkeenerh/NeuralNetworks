@@ -13,7 +13,6 @@ class NoiseLayer : public Layer {
     void out_errors(std::vector<double> target_vector) override {
         throw std::runtime_error("NoiseLayer::out_errors() is not valid");
     };
-    void update_weights(std::vector<double> input_data, double learning_rate) override { return; };
 
    private:
     double noise_chance;
