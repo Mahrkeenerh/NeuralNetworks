@@ -42,7 +42,6 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
 std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
     std::vector<double> output(this->output_size, 0.0);
 
-    // #pragma omp parallel for
     // Calculate output for each neuron
     double sum = 0;
     // double max = *std::max_element(std::begin(this->outputs), std::end(this->outputs));
@@ -72,7 +71,6 @@ void SoftmaxLayer::out_errors(std::vector<double> output, std::vector<double> ta
 
 void SoftmaxLayer::calculate_updates(std::vector<std::vector<double>>* updates,
                                      std::vector<double> input, double learning_rate) {
-    // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
@@ -87,7 +85,6 @@ void SoftmaxLayer::calculate_updates(std::vector<std::vector<double>>* updates,
 }
 
 void SoftmaxLayer::apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {
-    // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         for (int w_i = 0; w_i < this->input_size + 1; w_i++) {
             this->weights[n_i][w_i] -= updates[n_i][w_i];

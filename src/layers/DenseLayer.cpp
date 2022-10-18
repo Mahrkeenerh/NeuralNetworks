@@ -56,7 +56,6 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 std::vector<double> DenseLayer::predict(std::vector<double> input) {
     std::vector<double> output(this->output_size, 0.0);
 
-    // #pragma omp parallel for
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i += consts::MAT_MAX) {
         for (int n_j = 0; n_j < consts::MAT_MAX && n_i + n_j < this->output_size; n_j++) {
@@ -70,7 +69,6 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
         }
     }
 
-    // #pragma omp parallel for
     // Apply activation function
     for (int i = 0; i < this->output_size; i++) {
         output[i] = this->activation(output[i]);
@@ -93,7 +91,6 @@ void DenseLayer::out_errors(std::vector<double> output, std::vector<double> targ
 
 void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> output,
                                std::vector<double> target_vector) {
-    // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->gradients[n_i] = 0;
 
@@ -111,7 +108,6 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> outpu
 
 void DenseLayer::calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input,
                                    double learning_rate) {
-    // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
@@ -154,7 +150,6 @@ void DenseLayer::calculate_updates(std::vector<std::vector<double>>* updates, st
 }
 
 void DenseLayer::apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {
-    // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         for (int w_i = 0; w_i < this->input_size + 1; w_i++) {
             this->weights[n_i][w_i] -= updates[n_i][w_i];
