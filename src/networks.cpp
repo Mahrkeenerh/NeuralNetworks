@@ -17,6 +17,16 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     // Create output layer
     this->layers.push_back(
         new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
+
+    this->outputs = std::vector<std::vector<double>>(layer_sizes.size());
+
+    // Initialize updates
+    for (int i = 0; i < layer_sizes.size() - 1; i++) {
+        this->updates.push_back(std::vector<std::vector<double>>(layer_sizes[i + 1]));
+        for (int j = 0; j < layer_sizes[i + 1]; j++) {
+            this->updates[i][j] = std::vector<double>(layer_sizes[i], 0.0);
+        }
+    }
 }
 
 std::vector<double> DenseNetwork::predict(std::vector<double> input) {
@@ -29,37 +39,32 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     return output;
 }
 
-std::vector<std::vector<double>> DenseNetwork::forwardpropagate(std::vector<double> input) {
-    std::vector<std::vector<double>> outputs;
-    outputs.push_back(input);
+void DenseNetwork::forwardpropagate(std::vector<double> input) {
+    this->outputs[0] = input;
 
     for (int i = 0; i < this->layers.size(); i++) {
-        outputs.push_back(this->layers[i]->predict(outputs[i]));
+        this->outputs[i + 1] = this->layers[i]->predict(outputs[i]);
     }
-
-    return outputs;
 }
 
-void DenseNetwork::backpropagate(std::vector<std::vector<double>> outputs,
-                                 std::vector<double> target_vector) {
-    // this->layers[this->layers.size() - 1]->out_errors(target_vector);
-    this->layers[this->layers.size() - 1]->out_errors(outputs[outputs.size() - 1], target_vector);
+void DenseNetwork::backpropagate(std::vector<double> target_vector) {
+    this->layers[this->layers.size() - 1]->out_errors(this->outputs[this->outputs.size() - 1],
+                                                      target_vector);
 
     for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
-        // this->layers[l_i]->backpropagate(this->layers[l_i + 1], target_vector);
-        this->layers[l_i]->backpropagate(this->layers[l_i + 1], outputs[l_i + 1], target_vector);
+        this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[l_i + 1], target_vector);
     }
 }
 
-void DenseNetwork::calculate_updates(std::vector<std::vector<double>> outputs, double learning_rate) {
+void DenseNetwork::calculate_updates(double learning_rate) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-        this->layers[l_i]->calculate_updates(outputs[l_i], learning_rate);
+        this->layers[l_i]->calculate_updates(&this->updates[l_i], this->outputs[l_i], learning_rate);
     }
 }
 
 void DenseNetwork::apply_updates(int batch_size) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-        this->layers[l_i]->apply_updates(batch_size);
+        this->layers[l_i]->apply_updates(this->updates[l_i], batch_size);
     }
 }
 
@@ -67,7 +72,8 @@ void DenseNetwork::clear_updates() {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
         for (int n_i = 0; n_i < this->layers[l_i]->output_size; n_i++) {
             for (int w_i = 0; w_i < this->layers[l_i]->input_size + 1; w_i++) {
-                this->layers[l_i]->updates[n_i][w_i] = 0;
+                // this->layers[l_i]->updates[n_i][w_i] = 0;
+                this->updates[l_i][n_i][w_i] = 0;
             }
         }
     }
@@ -123,8 +129,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                               << "s\033[K" << std::endl;
                 }
 
-                std::vector<std::vector<double>> outputs =
-                    this->forwardpropagate(dataset.train_data[idxs[i]]);
+                this->forwardpropagate(dataset.train_data[idxs[i]]);
                 std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
                 target_vector[dataset.train_labels[idxs[i]]] = 1;
 
@@ -136,8 +141,8 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                     correct++;
                 }
 
-                this->backpropagate(outputs, target_vector);
-                this->calculate_updates(outputs, learning_rate);
+                this->backpropagate(target_vector);
+                this->calculate_updates(learning_rate);
             }
 
             this->apply_updates(minibatch_size);

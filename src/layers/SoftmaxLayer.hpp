@@ -24,8 +24,9 @@ class SoftmaxLayer : public Layer {
                        std::vector<double> target_vector) override {
         throw std::runtime_error("SoftmaxLayer::backpropagate() is not valid");
     }
-    void calculate_updates(std::vector<double> input_data, double learning_rate) override;
-    void apply_updates(int minibatch_size) override;
+    void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input_data,
+                           double learning_rate) override;
+    void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) override;
 };
 
 #endif

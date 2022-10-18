@@ -20,8 +20,9 @@ class DenseLayer : public Layer {
     void out_errors(std::vector<double> output, std::vector<double> target_vector) override;
     void backpropagate(Layer* connected_layer, std::vector<double> output,
                        std::vector<double> target_vector) override;
-    void calculate_updates(std::vector<double> input_data, double learning_rate) override;
-    void apply_updates(int minibatch_size) override;
+    void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input_data,
+                           double learning_rate) override;
+    void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) override;
 };
 
 #endif

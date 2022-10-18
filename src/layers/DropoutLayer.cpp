@@ -8,8 +8,6 @@ DropoutLayer::DropoutLayer(int output_size, double dropout_chance) {
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
-    this->updates =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
 }
 

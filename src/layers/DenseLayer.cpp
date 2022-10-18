@@ -19,8 +19,6 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
-    this->updates =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
     // this->batch_errors = std::vector<double>(output_size, 0.0);
 
@@ -111,17 +109,18 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> outpu
     }
 }
 
-void DenseLayer::calculate_updates(std::vector<double> input, double learning_rate) {
+void DenseLayer::calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input,
+                                   double learning_rate) {
     // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
-        this->updates[n_i][0] += update;
+        (*updates)[n_i][0] += update;
 
         for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
             update = this->gradients[n_i] * learning_rate * input[w_i - 1] +
                      this->beta1 * this->weight_delta[n_i][w_i];
-            this->updates[n_i][w_i] += update;
+            (*updates)[n_i][w_i] += update;
         }
     }
 
@@ -154,12 +153,12 @@ void DenseLayer::calculate_updates(std::vector<double> input, double learning_ra
     } */
 }
 
-void DenseLayer::apply_updates(int minibatch_size) {
+void DenseLayer::apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {
     // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         for (int w_i = 0; w_i < this->input_size + 1; w_i++) {
-            this->weights[n_i][w_i] -= this->updates[n_i][w_i];
-            this->weight_delta[n_i][w_i] = this->updates[n_i][w_i] / minibatch_size;
+            this->weights[n_i][w_i] -= updates[n_i][w_i];
+            this->weight_delta[n_i][w_i] = updates[n_i][w_i] / minibatch_size;
         }
     }
 }

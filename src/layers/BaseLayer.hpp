@@ -21,11 +21,11 @@ class Layer {
         }
     }
 
-    virtual void calculate_updates(std::vector<double> input, double learning_rate) {}
-    virtual void apply_updates(int minibatch_size) {}
+    virtual void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input,
+                                   double learning_rate) {}
+    virtual void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {}
 
     std::vector<std::vector<double>> weights;
-    std::vector<std::vector<double>> updates;
     std::vector<double> gradients;
 
     double (*activation)(double);
