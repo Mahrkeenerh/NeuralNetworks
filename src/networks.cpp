@@ -23,35 +23,37 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     std::vector<double> output = input;
 
     for (int i = 0; i < this->layers.size(); i++) {
-        output = this->layers[i]->predict(output);
-    }
-
-    return output;
-}
-
-std::vector<double> DenseNetwork::forwardpropagate(std::vector<double> input) {
-    std::vector<double> output = input;
-
-    for (int i = 0; i < this->layers.size(); i++) {
         output = this->layers[i]->forwardpropagate(output);
     }
 
     return output;
 }
 
-void DenseNetwork::backpropagate(std::vector<double> target_vector) {
-    this->layers[this->layers.size() - 1]->out_errors(target_vector);
+std::vector<std::vector<double>> DenseNetwork::forwardpropagate(std::vector<double> input) {
+    std::vector<std::vector<double>> outputs;
+    outputs.push_back(input);
+
+    for (int i = 0; i < this->layers.size(); i++) {
+        outputs.push_back(this->layers[i]->predict(outputs[i]));
+    }
+
+    return outputs;
+}
+
+void DenseNetwork::backpropagate(std::vector<std::vector<double>> outputs,
+                                 std::vector<double> target_vector) {
+    // this->layers[this->layers.size() - 1]->out_errors(target_vector);
+    this->layers[this->layers.size() - 1]->out_errors(outputs[outputs.size() - 1], target_vector);
 
     for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
-        this->layers[l_i]->backpropagate(this->layers[l_i + 1], target_vector);
+        // this->layers[l_i]->backpropagate(this->layers[l_i + 1], target_vector);
+        this->layers[l_i]->backpropagate(this->layers[l_i + 1], outputs[l_i + 1], target_vector);
     }
 }
 
-void DenseNetwork::calculate_updates(std::vector<double> input_data, double learning_rate) {
+void DenseNetwork::calculate_updates(std::vector<std::vector<double>> outputs, double learning_rate) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-        std::vector<double> l_inputs = (l_i == 0) ? input_data : this->layers[l_i - 1]->outputs;
-
-        this->layers[l_i]->calculate_updates(l_inputs, learning_rate);
+        this->layers[l_i]->calculate_updates(outputs[l_i], learning_rate);
     }
 }
 
@@ -121,18 +123,21 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                               << "s\033[K" << std::endl;
                 }
 
-                std::vector<double> outputs = this->forwardpropagate(dataset.train_data[idxs[i]]);
+                std::vector<std::vector<double>> outputs =
+                    this->forwardpropagate(dataset.train_data[idxs[i]]);
                 std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
                 target_vector[dataset.train_labels[idxs[i]]] = 1;
 
                 // Add if correct
-                if (std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())) ==
+                if (std::distance(outputs[outputs.size() - 1].begin(),
+                                  std::max_element(outputs[outputs.size() - 1].begin(),
+                                                   outputs[outputs.size() - 1].end())) ==
                     dataset.train_labels[idxs[i]]) {
                     correct++;
                 }
 
-                this->backpropagate(target_vector);
-                this->calculate_updates(dataset.train_data[idxs[i]], learning_rate);
+                this->backpropagate(outputs, target_vector);
+                this->calculate_updates(outputs, learning_rate);
             }
 
             this->apply_updates(minibatch_size);

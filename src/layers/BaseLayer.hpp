@@ -10,18 +10,12 @@ class Layer {
    public:
     int input_size, output_size;
 
-    virtual std::vector<double> predict(std::vector<double> input) {
-        // Calculate output for each neuron
-        for (int n_i = 0; n_i < this->output_size; n_i++) {
-            this->outputs[n_i] = input[n_i];
-        }
+    virtual std::vector<double> predict(std::vector<double> input) { return input; }
+    virtual std::vector<double> forwardpropagate(std::vector<double> input) { return input; }
 
-        return this->outputs;
-    }
-    virtual std::vector<double> forwardpropagate(std::vector<double> input) { return this->outputs; }
-
-    virtual void out_errors(std::vector<double> target_vector) {}
-    virtual void backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
+    virtual void out_errors(std::vector<double> output, std::vector<double> target_vector) {}
+    virtual void backpropagate(Layer* connected_layer, std::vector<double> output,
+                               std::vector<double> target_vector) {
         for (int n_i = 0; n_i < this->output_size; n_i++) {
             this->gradients[n_i] = connected_layer->gradients[n_i];
         }
@@ -33,7 +27,6 @@ class Layer {
     std::vector<std::vector<double>> weights;
     std::vector<std::vector<double>> updates;
     std::vector<double> gradients;
-    std::vector<double> outputs;
 
     double (*activation)(double);
     double (*derivative)(double);

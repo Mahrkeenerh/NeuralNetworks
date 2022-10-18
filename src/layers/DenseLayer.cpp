@@ -23,7 +23,6 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
     // this->batch_errors = std::vector<double>(output_size, 0.0);
-    this->outputs = std::vector<double>(output_size, 0.0);
 
     // Momentum value
     this->beta1 = 0.3;
@@ -57,16 +56,18 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 }
 
 std::vector<double> DenseLayer::predict(std::vector<double> input) {
+    std::vector<double> output(this->output_size, 0.0);
+
     // #pragma omp parallel for
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i += consts::MAT_MAX) {
         for (int n_j = 0; n_j < consts::MAT_MAX && n_i + n_j < this->output_size; n_j++) {
-            this->outputs[n_i + n_j] = this->weights[n_i + n_j][0];
+            output[n_i + n_j] = this->weights[n_i + n_j][0];
         }
 
         for (int i = 0; i < this->input_size; i++) {
             for (int n_j = 0; n_j < consts::MAT_MAX && n_i + n_j < this->output_size; n_j++) {
-                this->outputs[n_i + n_j] += this->weights[n_i + n_j][i + 1] * input[i];
+                output[n_i + n_j] += this->weights[n_i + n_j][i + 1] * input[i];
             }
         }
     }
@@ -74,25 +75,26 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     // #pragma omp parallel for
     // Apply activation function
     for (int i = 0; i < this->output_size; i++) {
-        this->outputs[i] = this->activation(this->outputs[i]);
+        output[i] = this->activation(output[i]);
     }
 
-    return this->outputs;
+    return output;
 }
 
-void DenseLayer::out_errors(std::vector<double> target_vector) {
+void DenseLayer::out_errors(std::vector<double> output, std::vector<double> target_vector) {
     // Calculate errors - MSE
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] = this->outputs[n_i] - target_vector[n_i];
+        this->gradients[n_i] = output[n_i] - target_vector[n_i];
     }
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] *= this->derivative(this->outputs[n_i]);
+        this->gradients[n_i] *= this->derivative(output[n_i]);
     }
 }
 
-void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
+void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> output,
+                               std::vector<double> target_vector) {
     // #pragma omp parallel for
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         this->gradients[n_i] = 0;
@@ -105,7 +107,7 @@ void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> targe
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] *= this->derivative(this->outputs[n_i]);
+        this->gradients[n_i] *= this->derivative(output[n_i]);
     }
 }
 

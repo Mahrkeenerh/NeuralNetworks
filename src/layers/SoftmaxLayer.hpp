@@ -1,6 +1,8 @@
 #ifndef SoftmaxLayer_hpp
 #define SoftmaxLayer_hpp
 
+#include <stdexcept>
+
 #include "BaseLayer.hpp"
 
 class SoftmaxLayer : public Layer {
@@ -17,7 +19,11 @@ class SoftmaxLayer : public Layer {
     std::vector<double> forwardpropagate(std::vector<double> input) override {
         return this->predict(input);
     };
-    void out_errors(std::vector<double> target_vector) override;
+    void out_errors(std::vector<double> output, std::vector<double> target_vector) override;
+    void backpropagate(Layer* connected_layer, std::vector<double> output,
+                       std::vector<double> target_vector) override {
+        throw std::runtime_error("SoftmaxLayer::backpropagate() is not valid");
+    }
     void calculate_updates(std::vector<double> input_data, double learning_rate) override;
     void apply_updates(int minibatch_size) override;
 };

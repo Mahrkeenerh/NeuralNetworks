@@ -11,18 +11,19 @@ DropoutLayer::DropoutLayer(int output_size, double dropout_chance) {
     this->updates =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
-    this->outputs = std::vector<double>(output_size, 0.0);
 }
 
 std::vector<double> DropoutLayer::forwardpropagate(std::vector<double> input) {
+    std::vector<double> output(this->output_size, 0.0);
+
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         if (rand() / (double)RAND_MAX > this->dropout_chance) {
-            this->outputs[n_i] = input[n_i] * (1.0 / (1.0 - this->dropout_chance));
+            output[n_i] = input[n_i] * (1.0 / (1.0 - this->dropout_chance));
         } else {
-            this->outputs[n_i] = 0.0;
+            output[n_i] = 0.0;
         }
     }
 
-    return this->outputs;
+    return output;
 };

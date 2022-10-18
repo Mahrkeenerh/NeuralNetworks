@@ -12,7 +12,6 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     this->updates =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
-    this->outputs = std::vector<double>(output_size, 0.0);
 
     // Momentum value
     this->beta1 = 0.2;
@@ -43,29 +42,33 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
 }
 
 std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
+    std::vector<double> output(this->output_size, 0.0);
+
     // #pragma omp parallel for
     // Calculate output for each neuron
     double sum = 0;
-    double max = *std::max_element(std::begin(this->outputs), std::end(this->outputs));
+    // double max = *std::max_element(std::begin(this->outputs), std::end(this->outputs));
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->outputs[n_i] = this->weights[n_i][0];
+        output[n_i] = this->weights[n_i][0];
 
         for (int i = 0; i < this->input_size; i++) {
-            this->outputs[n_i] += this->weights[n_i][i + 1] * input[i];
+            output[n_i] += this->weights[n_i][i + 1] * input[i];
         }
-        sum += exp(this->outputs[n_i] - max);
+        // sum += exp(this->outputs[n_i] - max);
+        sum += exp(output[n_i]);
     }
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->outputs[n_i] = exp(this->outputs[n_i] - max) / sum;
+        // this->outputs[n_i] = exp(this->outputs[n_i] - max) / sum;
+        output[n_i] = exp(output[n_i]) / sum;
     }
 
-    return this->outputs;
+    return output;
 }
 
-void SoftmaxLayer::out_errors(std::vector<double> target_vector) {
+void SoftmaxLayer::out_errors(std::vector<double> output, std::vector<double> target_vector) {
     // Derivative of cross entropy loss
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] = this->outputs[n_i] - target_vector[n_i];
+        this->gradients[n_i] = output[n_i] - target_vector[n_i];
     }
 }
 

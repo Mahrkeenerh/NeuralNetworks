@@ -11,10 +11,10 @@ class DenseNetwork {
     DenseNetwork(std::vector<int> layer_sizes);
 
     std::vector<double> predict(std::vector<double> input);
-    std::vector<double> forwardpropagate(std::vector<double> input);
-    void backpropagate(std::vector<double> target_vector);
+    std::vector<std::vector<double>> forwardpropagate(std::vector<double> input);
+    void backpropagate(std::vector<std::vector<double>> outputs, std::vector<double> target_vector);
 
-    void calculate_updates(std::vector<double> input, double learning_rate);
+    void calculate_updates(std::vector<std::vector<double>> outputs, double learning_rate);
     void apply_updates(int minibatch_size);
     void clear_updates();
 
