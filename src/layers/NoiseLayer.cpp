@@ -9,6 +9,8 @@ NoiseLayer::NoiseLayer(int output_size, double noise_chance, double noise_scale)
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
+    this->updates =
+        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
     this->gradients = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
 }

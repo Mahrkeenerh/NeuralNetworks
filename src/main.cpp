@@ -1,6 +1,7 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -18,7 +19,7 @@ void xor_net() {
     DenseNetwork network({2, 3, 2});
 
     // Train network
-    network.fit(dataset, 500, 1, 1);
+    network.fit(dataset, 500, 1, 1, 1);
 
     // Evaluate network
     for (int i = 0; i < 4; i++) {
@@ -33,12 +34,11 @@ void xor_net() {
     }
 }
 
-void mnist_net(int epochs, double learning_rate_start, double learning_rate_end) {
+void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
     DenseNetwork network({784, 128, 10});
 
-    network.fit(dataset, epochs, learning_rate_start, learning_rate_end);
-    // network.fit(dataset, epochs, learning_rate, batch_size, true);
+    network.fit(dataset, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 
     // Evaluate network
     for (int i = 0; i < 10; i++) {
@@ -59,21 +59,21 @@ int main(int argc, char *argv[]) {
 
     // Get epochs and learning rate from command line arguments
     int epochs = 10;
+    int minibatch_size = 64;
     double learning_rate_start = 0.001;
     double learning_rate_end = learning_rate_start / 10;
-    // int batch_size = 1;
     if (argc > 1) {
         epochs = std::stoi(argv[1]);
     }
     if (argc > 2) {
-        learning_rate_start = std::stod(argv[2]);
+        minibatch_size = std::stoi(argv[2]);
     }
     if (argc > 3) {
-        learning_rate_end = std::stod(argv[3]);
+        learning_rate_start = std::stod(argv[3]);
     }
-    // if (argc > 3) {
-    //     batch_size = std::stoi(argv[3]);
-    // }
+    if (argc > 4) {
+        learning_rate_end = std::stod(argv[4]);
+    }
 
     // Redirect cout to file
     // std::ofstream out("output.txt");
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < 10; i++) {
         start = omp_get_wtime();
-        mnist_net(epochs, learning_rate_start, learning_rate_end);
+        mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
         end = omp_get_wtime();
         std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
     }

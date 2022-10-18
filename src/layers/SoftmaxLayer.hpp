@@ -18,7 +18,8 @@ class SoftmaxLayer : public Layer {
         return this->predict(input);
     };
     void out_errors(std::vector<double> target_vector) override;
-    void update_weights(std::vector<double> input_data, double learning_rate) override;
+    void calculate_updates(std::vector<double> input_data, double learning_rate) override;
+    void apply_updates(int minibatch_size) override;
 };
 
 #endif

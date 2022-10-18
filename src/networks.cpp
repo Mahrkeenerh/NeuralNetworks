@@ -47,15 +47,31 @@ void DenseNetwork::backpropagate(std::vector<double> target_vector) {
     }
 }
 
-void DenseNetwork::update_weights(std::vector<double> input_data, double learning_rate) {
+void DenseNetwork::calculate_updates(std::vector<double> input_data, double learning_rate) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
         std::vector<double> l_inputs = (l_i == 0) ? input_data : this->layers[l_i - 1]->outputs;
 
-        this->layers[l_i]->update_weights(l_inputs, learning_rate);
+        this->layers[l_i]->calculate_updates(l_inputs, learning_rate);
     }
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start,
+void DenseNetwork::apply_updates(int batch_size) {
+    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
+        this->layers[l_i]->apply_updates(batch_size);
+    }
+}
+
+void DenseNetwork::clear_updates() {
+    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
+        for (int n_i = 0; n_i < this->layers[l_i]->output_size; n_i++) {
+            for (int w_i = 0; w_i < this->layers[l_i]->input_size + 1; w_i++) {
+                this->layers[l_i]->updates[n_i][w_i] = 0;
+            }
+        }
+    }
+}
+
+void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double learning_rate_start,
                        double learning_rate_end, bool verbose) {
     double train_start = omp_get_wtime();
 
@@ -68,10 +84,11 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start
         int correct = 0;
         if (verbose) {
             progress = 0;
-            data_padding = std::to_string(dataset.train_size).length() - std::to_string(0).length() + 1;
+            data_padding = std::to_string(dataset.train_size / minibatch_size).length() -
+                           std::to_string(0).length() + 1;
 
-            std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size << " ["
-                      << std::string(50, '-') << "]" << std::endl;
+            std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size / minibatch_size
+                      << " [" << std::string(50, '-') << "]" << std::endl;
         }
 
         // Random idxs
@@ -86,33 +103,40 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start
                 learning_rate_end;
         }
 
-        for (int i = 0; i < dataset.train_size; i++) {
-            if (verbose && (int)((double)(i + 1) / dataset.train_size * 50) > progress) {
-                progress = (int)((double)(i + 1) / dataset.train_size * 50);
-                double acc = (double)correct / (i + 1);
-                data_padding =
-                    std::to_string(dataset.train_size).length() - std::to_string(i + 1).length() + 1;
-                double epoch_eta =
-                    (double)(omp_get_wtime() - epoch_start) / (i + 1) * (dataset.train_size - i - 1);
+        for (int batch = 0; batch < (dataset.train_size / minibatch_size); batch++) {
+            for (int i = batch * minibatch_size; i < (batch + 1) * minibatch_size; i++) {
+                if (verbose &&
+                    (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50) > progress) {
+                    progress = (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50);
+                    double acc = (double)correct / (i + 1);
+                    data_padding = std::to_string(dataset.train_size / minibatch_size).length() -
+                                   std::to_string(minibatch_size + 1).length() + 1;
+                    double epoch_eta =
+                        (double)(omp_get_wtime() - epoch_start) / (i + 1) * (dataset.train_size - i - 1);
 
-                std::cout << "\033[F" << std::string(data_padding, ' ') << i + 1 << "/"
-                          << dataset.train_size << " [" << std::string(progress - 1, '=') << ">"
-                          << std::string(50 - progress, '-') << "] Train accuracy: " << acc
-                          << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
+                    std::cout << "\033[F" << std::string(data_padding, ' ') << batch + 1 << "/"
+                              << dataset.train_size / minibatch_size << " ["
+                              << std::string(progress - 1, '=') << ">" << std::string(50 - progress, '-')
+                              << "] Train accuracy: " << acc << " | Epoch ETA: " << epoch_eta
+                              << "s\033[K" << std::endl;
+                }
+
+                std::vector<double> outputs = this->forwardpropagate(dataset.train_data[idxs[i]]);
+                std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
+                target_vector[dataset.train_labels[idxs[i]]] = 1;
+
+                // Add if correct
+                if (std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())) ==
+                    dataset.train_labels[idxs[i]]) {
+                    correct++;
+                }
+
+                this->backpropagate(target_vector);
+                this->calculate_updates(dataset.train_data[idxs[i]], learning_rate);
             }
 
-            std::vector<double> outputs = this->forwardpropagate(dataset.train_data[idxs[i]]);
-            std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
-            target_vector[dataset.train_labels[idxs[i]]] = 1;
-
-            // Add if correct
-            if (std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())) ==
-                dataset.train_labels[idxs[i]]) {
-                correct++;
-            }
-
-            this->backpropagate(target_vector);
-            this->update_weights(dataset.train_data[idxs[i]], learning_rate);
+            this->apply_updates(minibatch_size);
+            this->clear_updates();
         }
 
         // Stats
@@ -133,107 +157,6 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start
         }
     }
 }
-
-/*void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate, int batch_size,
-                       bool verbose) {
-    double train_start = omp_get_wtime();
-
-    for (int epoch = 0; epoch < epochs; epoch++) {
-        double epoch_start;
-        epoch_start = omp_get_wtime();
-
-        // Visual loading bar
-        int progress, data_padding;
-        int correct = 0;
-        if (verbose) {
-            progress = 0;
-            data_padding = std::to_string(dataset.train_size / batch_size).length() -
-                           std::to_string(0).length() + 1;
-
-            std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size / batch_size
-                      << " [" << std::string(50, '-') << "]" << std::endl;
-        }
-
-        // Random idxs
-        std::vector<int> idxs(dataset.train_size);
-        std::iota(idxs.begin(), idxs.end(), 0);
-        std::random_shuffle(idxs.begin(), idxs.end());
-
-        for (int batch = 0; batch < (dataset.train_size / batch_size); batch++) {
-            // Clear batch gradients
-            for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    this->layers[l_i].batch_errors[n_i] = 0;
-                }
-            }
-
-            for (int i = batch * batch_size; i < (batch + 1) * batch_size; i++) {
-                if (verbose &&
-                    (int)((double)(batch + 1) / (dataset.train_size / batch_size) * 50) > progress) {
-                    progress = (int)((double)(batch + 1) / (dataset.train_size / batch_size) * 50);
-                    double acc = (double)correct / (i + 1);
-                    data_padding = std::to_string(dataset.train_size / batch_size).length() -
-                                   std::to_string(batch + 1).length() + 1;
-                    double epoch_eta = (double)(omp_get_wtime() - epoch_start)   / (i + 1) *
-                                       (dataset.train_size - i - 1);
-
-                    std::cout << "\033[F" << std::string(data_padding, ' ') << batch + 1 << "/"
-                              << dataset.train_size / batch_size << " ["
-                              << std::string(progress - 1, '=') << ">" << std::string(50 - progress, '-')
-                              << "] Train accuracy: " << acc << " | Epoch ETA: " << epoch_eta
-                              << "s\033[K" << std::endl;
-                }
-
-                std::vector<double> outputs = this->predict(dataset.train_data[idxs[i]]);
-                std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
-                target_vector[dataset.train_labels[idxs[i]]] = 1;
-
-                // Add if correct
-                if (std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())) ==
-                    dataset.train_labels[idxs[i]]) {
-                    correct++;
-                }
-
-                this->backpropagate(outputs, target_vector);
-
-                // Update batch gradients
-                for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                    for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                        this->layers[l_i].batch_errors[n_i] += this->layers[l_i].gradients[n_i];
-                    }
-                }
-            }
-
-            for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-                for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    this->layers[l_i].gradients[n_i] = this->layers[l_i].batch_errors[n_i] / batch_size;
-                }
-            }
-
-            // this->update_weights(learning_rate);
-            for (int i = batch * batch_size; i < (batch + 1) * batch_size; i++) {
-                this->update_weights(dataset.train_data[idxs[i]], learning_rate);
-            }
-        }
-
-        // Stats
-        if (verbose) {
-            double train_accuracy = (double)correct / dataset.train_size;
-            double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
-            double epoch_end = omp_get_wtime();
-
-            int epoch_padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
-            double epoch_time = (double)(epoch_end - epoch_start)  ;
-            double elapsed_time = (double)(epoch_end - train_start)  ;
-            double eta_s = (elapsed_time / (epoch + 1)) * (epochs - epoch - 1);
-
-            std::cout << "\033[FEpoch " << std::string(epoch_padding, ' ') << epoch + 1 << "/" << epochs
-                      << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
-                      << " | Epoch time: " << epoch_time << "s | ETA: " << eta_s << "s\033[K"
-                      << std::endl;
-        }
-    }
-}*/
 
 double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
     int correct = 0;
