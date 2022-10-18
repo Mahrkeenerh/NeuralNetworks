@@ -8,7 +8,7 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
-    this->errors = std::vector<double>(output_size, 0.0);
+    this->gradients = std::vector<double>(output_size, 0.0);
     this->outputs = std::vector<double>(output_size, 0.0);
 
     // Momentum value
@@ -60,15 +60,9 @@ std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
 }
 
 void SoftmaxLayer::out_errors(std::vector<double> target_vector) {
-    // Calculate errors - MSE and apply activation function
-    // for (int n_i = 0; n_i < this->output_size; n_i++) {
-    //    this->errors[n_i] = (this->outputs[n_i] - target_vector[n_i]) *
-    //    this->derivative(this->outputs[n_i]);
-    // }
-
     // Derivative of cross entropy loss
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->errors[n_i] = this->outputs[n_i] - target_vector[n_i];
+        this->gradients[n_i] = this->outputs[n_i] - target_vector[n_i];
     }
 }
 
@@ -76,12 +70,12 @@ void SoftmaxLayer::update_weights(std::vector<double> input, double learning_rat
     // #pragma omp parallel for
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        update = this->errors[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+        update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
         this->weights[n_i][0] -= update;
         this->weight_delta[n_i][0] = update;
 
         for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
-            update = this->errors[n_i] * learning_rate * input[w_i - 1] +
+            update = this->gradients[n_i] * learning_rate * input[w_i - 1] +
                      this->beta1 * this->weight_delta[n_i][w_i];
             this->weights[n_i][w_i] -= update;
             this->weight_delta[n_i][w_i] = update;

@@ -160,7 +160,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start
         std::random_shuffle(idxs.begin(), idxs.end());
 
         for (int batch = 0; batch < (dataset.train_size / batch_size); batch++) {
-            // Clear batch errors
+            // Clear batch gradients
             for (int l_i = 0; l_i < this->layers.size(); l_i++) {
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
                     this->layers[l_i].batch_errors[n_i] = 0;
@@ -196,17 +196,17 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, double learning_rate_start
 
                 this->backpropagate(outputs, target_vector);
 
-                // Update batch errors
+                // Update batch gradients
                 for (int l_i = 0; l_i < this->layers.size(); l_i++) {
                     for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                        this->layers[l_i].batch_errors[n_i] += this->layers[l_i].errors[n_i];
+                        this->layers[l_i].batch_errors[n_i] += this->layers[l_i].gradients[n_i];
                     }
                 }
             }
 
             for (int l_i = 0; l_i < this->layers.size(); l_i++) {
                 for (int n_i = 0; n_i < this->layers[l_i].output_size; n_i++) {
-                    this->layers[l_i].errors[n_i] = this->layers[l_i].batch_errors[n_i] / batch_size;
+                    this->layers[l_i].gradients[n_i] = this->layers[l_i].batch_errors[n_i] / batch_size;
                 }
             }
 

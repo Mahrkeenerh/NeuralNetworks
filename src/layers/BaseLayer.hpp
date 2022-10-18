@@ -23,14 +23,14 @@ class Layer {
     virtual void out_errors(std::vector<double> target_vector) {}
     virtual void backpropagate(Layer* connected_layer, std::vector<double> target_vector) {
         for (int n_i = 0; n_i < this->output_size; n_i++) {
-            this->errors[n_i] = connected_layer->errors[n_i];
+            this->gradients[n_i] = connected_layer->gradients[n_i];
         }
     }
 
     virtual void update_weights(std::vector<double> input_data, double learning_rate) {}
 
     std::vector<std::vector<double>> weights;
-    std::vector<double> errors;
+    std::vector<double> gradients;
     std::vector<double> outputs;
 
     double (*activation)(double);
