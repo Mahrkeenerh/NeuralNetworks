@@ -36,22 +36,22 @@ void xor_net() {
 
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
-    DenseNetwork network({784, 128, 10});
+    DenseNetwork network({784, 256, 512, 128, 10});
 
     network.fit(dataset, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 
     // Evaluate network
-    for (int i = 0; i < 10; i++) {
-        std::vector<double> output = network.predict(dataset.test_data[i]);
+    // for (int i = 0; i < 10; i++) {
+    //     std::vector<double> output = network.predict(dataset.test_data[i]);
 
-        int result = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
-        double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
+    //     int result = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
+    //     double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
 
-        std::cout << "i: " << i;
-        std::cout << " | Target: " << dataset.test_labels[i];
-        std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << confidence << std::endl;
-    }
+    //     std::cout << "i: " << i;
+    //     std::cout << " | Target: " << dataset.test_labels[i];
+    //     std::cout << " | Output: " << result;
+    //     std::cout << " | Confidence: " << confidence << std::endl;
+    // }
 }
 
 int main(int argc, char *argv[]) {
@@ -87,10 +87,12 @@ int main(int argc, char *argv[]) {
     // measure time
     double start, end;
 
-    start = omp_get_wtime();
-    mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
-    end = omp_get_wtime();
-    std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
+    for (int i = 0; i < 10; i++) {
+        start = omp_get_wtime();
+        mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
+        end = omp_get_wtime();
+        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
+    }
 
     return 0;
 }

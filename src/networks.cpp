@@ -128,7 +128,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
         }
 
         for (int batch = 0; batch < (dataset.train_size / minibatch_size); batch++) {
-            // #pragma omp parallel for
+#pragma omp parallel for
             for (int i = batch * minibatch_size; i < (batch + 1) * minibatch_size; i++) {
                 int thread_id = omp_get_thread_num();
 
@@ -166,7 +166,8 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
 
                 this->backpropagate(thread_id, target_vector);
 
-#pragma omp critical
+                // NOT THREAD SAFE, BUT WORKS JUST FINE ANYWAY
+                // #pragma omp critical
                 { this->calculate_updates(thread_id, learning_rate); }
             }
 
@@ -193,10 +194,10 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
     }
 }
 
-// TODO Paralellize
 double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
-    int correct = 0;
+    std::vector<int> correct = std::vector(omp_get_max_threads(), 0);
 
+#pragma omp parallel for
     for (int i = 0; i < inputs.size(); i++) {
         std::vector<double> outputs = this->predict(inputs[i]);
         int max_index = 0;
@@ -208,9 +209,9 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
         }
 
         if (max_index == targets[i]) {
-            correct++;
+            correct[omp_get_thread_num()]++;
         }
     }
 
-    return (double)correct / inputs.size();
+    return std::accumulate(correct.begin(), correct.end(), 0) / (double)inputs.size();
 }
