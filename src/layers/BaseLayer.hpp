@@ -8,7 +8,11 @@
 
 class Layer {
    public:
+    virtual void setup(int input_size){};
+
     int input_size, output_size;
+
+    std::vector<std::vector<double>> weights;
 
     virtual std::vector<double> predict(std::vector<double> input) { return input; }
     virtual std::vector<double> forwardpropagate(std::vector<double> input) { return input; }
@@ -28,8 +32,7 @@ class Layer {
                                    double learning_rate) {}
     virtual void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {}
 
-    std::vector<std::vector<double>> weights;
-
+   protected:
     double (*activation)(double);
     double (*derivative)(double);
 };

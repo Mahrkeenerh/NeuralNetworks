@@ -5,7 +5,9 @@
 
 class DenseLayer : public Layer {
    public:
+    DenseLayer(int width, double (*activation)(double));
     DenseLayer(int input_size, int output_size, double (*activation)(double));
+    void setup(int input_size) override;
 
     std::vector<std::vector<double>> momentum;
     std::vector<std::vector<double>> variance;

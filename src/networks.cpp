@@ -6,43 +6,52 @@
 #include <iostream>
 #include <numeric>
 
-DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
-    this->layer_sizes = layer_sizes;
+DenseNetwork::DenseNetwork(int input_size) {
+    // // Create layers
+    // for (int i = 0; i < layer_sizes.size() - 2; i++) {
+    //     this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
+    // }
 
-    // Create layers
-    for (int i = 0; i < layer_sizes.size() - 2; i++) {
-        this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
-    }
-
-    // Create output layer
-    this->layers.push_back(
-        new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
+    // // Create output layer
+    // this->layers.push_back(
+    //     new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
+    this->input_size = input_size;
 
     for (int i = 0; i < omp_get_max_threads(); i++) {
-        this->outputs.push_back(std::vector<std::vector<double>>(layer_sizes.size()));
-        this->gradients.push_back(std::vector<std::vector<double>>(layer_sizes.size() - 1));
-
-        for (int j = 0; j < layers.size(); j++) {
-            this->gradients[i][j] = std::vector<double>(layer_sizes[j + 1], 0.0);
-        }
+        this->outputs.push_back(
+            std::vector<std::vector<double>>(1, std::vector<double>(input_size, 0.0)));
+        this->gradients.push_back(std::vector<std::vector<double>>());
     }
 
-    this->updates = std::vector<std::vector<std::vector<double>>>(layers.size());
+    this->updates = std::vector<std::vector<std::vector<double>>>();
+}
 
-    for (int i = 0; i < layers.size(); i++) {
-        this->updates[i] = std::vector<std::vector<double>>(layer_sizes[i + 1]);
+DenseNetwork DenseNetwork::add_layer(Layer* layer) {
+    int input = this->size == 0 ? this->input_size : this->layers[this->size - 1]->output_size;
 
-        for (int j = 0; j < layer_sizes[i + 1]; j++) {
-            this->updates[i][j] = std::vector<double>(layer_sizes[i] + 1, 0.0);
-        }
+    layer->setup(input);
+    this->layers.push_back(layer);
+    this->size++;
+
+    for (int i = 0; i < omp_get_max_threads(); i++) {
+        this->outputs[i].push_back(std::vector<double>(layer->output_size, 0.0));
+        this->gradients[i].push_back(std::vector<double>(layer->output_size, 0.0));
     }
+
+    this->updates.push_back(std::vector<std::vector<double>>(layer->output_size));
+
+    for (int j = 0; j < layer->output_size; j++) {
+        this->updates[this->size - 1][j] = std::vector<double>(layer->input_size + 1, 0.0);
+    }
+
+    return *this;
 }
 
 std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     std::vector<double> output = input;
 
-    for (int i = 0; i < this->layers.size(); i++) {
-        output = this->layers[i]->forwardpropagate(output);
+    for (int i = 0; i < this->size; i++) {
+        output = this->layers[i]->predict(output);
     }
 
     return output;
@@ -51,17 +60,17 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
 void DenseNetwork::forwardpropagate(int thread_id, std::vector<double> input) {
     this->outputs[thread_id][0] = input;
 
-    for (int i = 0; i < this->layers.size(); i++) {
-        this->outputs[thread_id][i + 1] = this->layers[i]->predict(this->outputs[thread_id][i]);
+    for (int i = 0; i < this->size; i++) {
+        this->outputs[thread_id][i + 1] = this->layers[i]->forwardpropagate(this->outputs[thread_id][i]);
     }
 }
 
 void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vector) {
-    this->layers[this->layers.size() - 1]->out_errors(
+    this->layers[this->size - 1]->out_errors(
         this->outputs[thread_id][this->outputs[thread_id].size() - 1], target_vector,
         &(this->gradients[thread_id][this->gradients[thread_id].size() - 1]));
 
-    for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
+    for (int l_i = this->size - 2; l_i >= 0; l_i--) {
         this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[thread_id][l_i + 1],
                                          target_vector, &(this->gradients[thread_id][l_i]),
                                          this->gradients[thread_id][l_i + 1]);
@@ -69,14 +78,14 @@ void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vecto
 }
 
 void DenseNetwork::calculate_updates(int thread_id, double learning_rate) {
-    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
+    for (int l_i = 0; l_i < this->size; l_i++) {
         this->layers[l_i]->calculate_updates(&(this->updates[l_i]), this->gradients[thread_id][l_i],
                                              this->outputs[thread_id][l_i], learning_rate);
     }
 }
 
 void DenseNetwork::apply_updates(int batch_size) {
-    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
+    for (int l_i = 0; l_i < this->size; l_i++) {
         this->layers[l_i]->apply_updates(this->updates[l_i], batch_size);
     }
 }
@@ -149,7 +158,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                 }
 
                 this->forwardpropagate(thread_id, dataset.train_data[idxs[i]]);
-                std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
+                std::vector<double> target_vector(this->layers[this->size - 1]->output_size, 0);
                 target_vector[dataset.train_labels[idxs[i]]] = 1;
 
 #pragma omp critical

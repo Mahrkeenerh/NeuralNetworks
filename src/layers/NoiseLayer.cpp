@@ -1,14 +1,26 @@
 #include "NoiseLayer.hpp"
 
-NoiseLayer::NoiseLayer(int output_size, double noise_chance, double noise_scale) {
-    this->input_size = output_size;
-    this->output_size = output_size;
+NoiseLayer::NoiseLayer(double noise_chance, double noise_scale) {
+    this->noise_chance = noise_chance;
+    this->noise_scale = noise_scale;
+}
+
+NoiseLayer::NoiseLayer(int width, double noise_chance, double noise_scale) {
+    this->input_size = width;
+    this->output_size = width;
 
     this->noise_chance = noise_chance;
     this->noise_scale = noise_scale;
 
+    this->weights = std::vector<std::vector<double>>(width, std::vector<double>(input_size + 1, 1.0));
+}
+
+void NoiseLayer::setup(int input_size) {
+    this->input_size = input_size;
+    this->output_size = input_size;
+
     this->weights =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
+        std::vector<std::vector<double>>(input_size, std::vector<double>(input_size + 1, 1.0));
 }
 
 std::vector<double> NoiseLayer::forwardpropagate(std::vector<double> input) {

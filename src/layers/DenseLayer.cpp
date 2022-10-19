@@ -1,5 +1,20 @@
 #include "DenseLayer.hpp"
 
+DenseLayer::DenseLayer(int width, double (*activation)(double)) {
+    this->output_size = width;
+    this->activation = activation;
+
+    if (activation == sigmoid) {
+        this->derivative = sigmoid_derivative;
+    } else if (activation == relu) {
+        this->derivative = relu_derivative;
+    } else if (activation == leaky_relu) {
+        this->derivative = leaky_relu_derivative;
+    } else if (activation == swish) {
+        this->derivative = swish_derivative;
+    }
+}
+
 DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
     this->output_size = output_size;
@@ -35,6 +50,33 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 
     // Initialize weights
     for (int i = 0; i < output_size; i++) {
+        for (int j = 0; j < input_size + 1; j++) {
+            if (activation == sigmoid) {
+                // Initialize weights with random values with uniform distribution
+                // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
+                this->weights[i][j] =
+                    (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
+            } else {
+                // He initialization with normal distribution
+                this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+            }
+        }
+    }
+}
+
+void DenseLayer::setup(int input_size) {
+    this->input_size = input_size;
+
+    this->weights =
+        std::vector<std::vector<double>>(this->output_size, std::vector<double>(input_size + 1, 0.0));
+
+    // Momentum value
+    this->beta1 = 0.3;
+    this->weight_delta =
+        std::vector<std::vector<double>>(this->output_size, std::vector<double>(input_size + 1, 0.0));
+
+    // Initialize weights
+    for (int i = 0; i < this->output_size; i++) {
         for (int j = 0; j < input_size + 1; j++) {
             if (activation == sigmoid) {
                 // Initialize weights with random values with uniform distribution

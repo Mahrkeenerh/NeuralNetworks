@@ -7,7 +7,9 @@
 
 class DropoutLayer : public Layer {
    public:
-    DropoutLayer(int output_size, double dropout_chance = 0.5);
+    DropoutLayer(double dropout_chance = 0.5);
+    DropoutLayer(int width, double dropout_chance = 0.5);
+    void setup(int input_size) override;
 
     std::vector<double> forwardpropagate(std::vector<double> input) override;
     void out_errors(std::vector<double> output, std::vector<double> target_vector,

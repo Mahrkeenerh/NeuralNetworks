@@ -7,7 +7,9 @@
 
 class SoftmaxLayer : public Layer {
    public:
+    SoftmaxLayer(int width);
     SoftmaxLayer(int input_size, int output_size);
+    void setup(int input_size) override;
 
     std::vector<std::vector<double>> momentum;
     std::vector<std::vector<double>> variance;

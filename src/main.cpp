@@ -11,32 +11,10 @@
 #include "networks.hpp"
 #include "optimizations.hpp"
 
-void xor_net() {
-    std::vector<std::vector<double>> input_data = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-    std::vector<int> target_data = {0, 1, 1, 0};
-    Dataset1D dataset = Dataset1D(input_data, target_data);
-
-    DenseNetwork network({2, 3, 2});
-
-    // Train network
-    network.fit(dataset, 500, 1, 1, 1);
-
-    // Evaluate network
-    for (int i = 0; i < 4; i++) {
-        std::vector<double> output = network.predict(input_data[i]);
-
-        int result = output[0] > output[1] ? 0 : 1;
-
-        std::cout << "Input: " << input_data[i][0] << ", " << input_data[i][1];
-        std::cout << " | Target: " << target_data[i];
-        std::cout << " | Output: " << result;
-        std::cout << " | Confidence: " << output[result] << std::endl;
-    }
-}
-
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
-    DenseNetwork network({784, 256, 512, 128, 10});
+    DenseNetwork network =
+        DenseNetwork(784).add_layer(new DenseLayer(256, relu)).add_layer(new SoftmaxLayer(10));
 
     network.fit(dataset, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 

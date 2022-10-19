@@ -7,7 +7,9 @@
 
 class NoiseLayer : public Layer {
    public:
-    NoiseLayer(int output_size, double noise_chance, double noise_scale = 0.1);
+    NoiseLayer(double noise_chance, double noise_scale = 0.1);
+    NoiseLayer(int width, double noise_chance, double noise_scale = 0.1);
+    void setup(int input_size) override;
 
     std::vector<double> forwardpropagate(std::vector<double> input) override;
     void out_errors(std::vector<double> output, std::vector<double> target_vector,

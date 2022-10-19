@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+SoftmaxLayer::SoftmaxLayer(int width) { this->output_size = width; }
+
 SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     this->input_size = input_size;
     this->output_size = output_size;
@@ -36,6 +38,31 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     // this->beta2 = 0.999;
     // this->eta = 0.01;
     // this->epsilon = 1e-8;
+}
+
+void SoftmaxLayer::setup(int input_size) {
+    this->input_size = input_size;
+
+    this->weights =
+        std::vector<std::vector<double>>(this->output_size, std::vector<double>(input_size + 1, 1.0));
+
+    // Momentum value
+    this->beta1 = 0.2;
+    this->weight_delta =
+        std::vector<std::vector<double>>(this->output_size, std::vector<double>(input_size + 1, 0.0));
+
+    // Initialize weights
+    for (int i = 0; i < this->output_size; i++) {
+        for (int j = 0; j < input_size + 1; j++) {
+            // He initialization with normal distribution
+            // this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+
+            // Initialize weights with random values with uniform distribution
+            // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
+            this->weights[i][j] =
+                (rand() / (double)RAND_MAX) * 2.0 / sqrt(input_size) - 1.0 / sqrt(input_size);
+        }
+    }
 }
 
 std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {

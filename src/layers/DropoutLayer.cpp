@@ -1,13 +1,22 @@
 #include "DropoutLayer.hpp"
 
-DropoutLayer::DropoutLayer(int output_size, double dropout_chance) {
-    this->input_size = output_size;
-    this->output_size = output_size;
+DropoutLayer::DropoutLayer(double dropout_chance) { this->dropout_chance = dropout_chance; }
+
+DropoutLayer::DropoutLayer(int width, double dropout_chance) {
+    this->input_size = width;
+    this->output_size = width;
 
     this->dropout_chance = dropout_chance;
 
+    this->weights = std::vector<std::vector<double>>(width, std::vector<double>(input_size + 1, 1.0));
+}
+
+void DropoutLayer::setup(int input_size) {
+    this->input_size = input_size;
+    this->output_size = input_size;
+
     this->weights =
-        std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
+        std::vector<std::vector<double>>(input_size, std::vector<double>(input_size + 1, 1.0));
 }
 
 std::vector<double> DropoutLayer::forwardpropagate(std::vector<double> input) {

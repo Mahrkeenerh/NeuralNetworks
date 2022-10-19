@@ -8,7 +8,9 @@
 
 class DenseNetwork {
    public:
-    DenseNetwork(std::vector<int> layer_sizes);
+    DenseNetwork(int input_size);
+
+    DenseNetwork add_layer(Layer* layer);
 
     std::vector<double> predict(std::vector<double> input);
 
@@ -18,7 +20,7 @@ class DenseNetwork {
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
 
    private:
-    std::vector<int> layer_sizes;
+    int input_size, size = 0;
     std::vector<Layer*> layers;
     std::vector<std::vector<std::vector<double>>> outputs;
     std::vector<std::vector<std::vector<double>>> gradients;
