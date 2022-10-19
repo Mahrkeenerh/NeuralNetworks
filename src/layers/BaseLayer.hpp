@@ -13,20 +13,22 @@ class Layer {
     virtual std::vector<double> predict(std::vector<double> input) { return input; }
     virtual std::vector<double> forwardpropagate(std::vector<double> input) { return input; }
 
-    virtual void out_errors(std::vector<double> output, std::vector<double> target_vector) {}
+    virtual void out_errors(std::vector<double> output, std::vector<double> target_vector,
+                            std::vector<double>* gradients) {}
     virtual void backpropagate(Layer* connected_layer, std::vector<double> output,
-                               std::vector<double> target_vector) {
+                               std::vector<double> target_vector, std::vector<double>* gradients,
+                               std::vector<double> connected_gradients) {
         for (int n_i = 0; n_i < this->output_size; n_i++) {
-            this->gradients[n_i] = connected_layer->gradients[n_i];
+            (*gradients)[n_i] = connected_gradients[n_i];
         }
     }
 
-    virtual void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input,
+    virtual void calculate_updates(std::vector<std::vector<double>>* updates,
+                                   std::vector<double> gradients, std::vector<double> input,
                                    double learning_rate) {}
     virtual void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) {}
 
     std::vector<std::vector<double>> weights;
-    std::vector<double> gradients;
 
     double (*activation)(double);
     double (*derivative)(double);

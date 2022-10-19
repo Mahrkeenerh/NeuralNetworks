@@ -18,13 +18,22 @@ DenseNetwork::DenseNetwork(std::vector<int> layer_sizes) {
     this->layers.push_back(
         new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
 
-    this->outputs = std::vector<std::vector<double>>(layer_sizes.size());
+    for (int i = 0; i < omp_get_max_threads(); i++) {
+        this->outputs.push_back(std::vector<std::vector<double>>(layer_sizes.size()));
+        this->gradients.push_back(std::vector<std::vector<double>>(layer_sizes.size() - 1));
 
-    // Initialize updates
-    for (int i = 0; i < layer_sizes.size() - 1; i++) {
-        this->updates.push_back(std::vector<std::vector<double>>(layer_sizes[i + 1]));
+        for (int j = 0; j < layers.size(); j++) {
+            this->gradients[i][j] = std::vector<double>(layer_sizes[j + 1], 0.0);
+        }
+    }
+
+    this->updates = std::vector<std::vector<std::vector<double>>>(layers.size());
+
+    for (int i = 0; i < layers.size(); i++) {
+        this->updates[i] = std::vector<std::vector<double>>(layer_sizes[i + 1]);
+
         for (int j = 0; j < layer_sizes[i + 1]; j++) {
-            this->updates[i][j] = std::vector<double>(layer_sizes[i], 0.0);
+            this->updates[i][j] = std::vector<double>(layer_sizes[i] + 1, 0.0);
         }
     }
 }
@@ -39,26 +48,30 @@ std::vector<double> DenseNetwork::predict(std::vector<double> input) {
     return output;
 }
 
-void DenseNetwork::forwardpropagate(std::vector<double> input) {
-    this->outputs[0] = input;
+void DenseNetwork::forwardpropagate(int thread_id, std::vector<double> input) {
+    this->outputs[thread_id][0] = input;
 
     for (int i = 0; i < this->layers.size(); i++) {
-        this->outputs[i + 1] = this->layers[i]->predict(outputs[i]);
+        this->outputs[thread_id][i + 1] = this->layers[i]->predict(this->outputs[thread_id][i]);
     }
 }
 
-void DenseNetwork::backpropagate(std::vector<double> target_vector) {
-    this->layers[this->layers.size() - 1]->out_errors(this->outputs[this->outputs.size() - 1],
-                                                      target_vector);
+void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vector) {
+    this->layers[this->layers.size() - 1]->out_errors(
+        this->outputs[thread_id][this->outputs[thread_id].size() - 1], target_vector,
+        &(this->gradients[thread_id][this->gradients[thread_id].size() - 1]));
 
     for (int l_i = this->layers.size() - 2; l_i >= 0; l_i--) {
-        this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[l_i + 1], target_vector);
+        this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[thread_id][l_i + 1],
+                                         target_vector, &(this->gradients[thread_id][l_i]),
+                                         this->gradients[thread_id][l_i + 1]);
     }
 }
 
-void DenseNetwork::calculate_updates(double learning_rate) {
+void DenseNetwork::calculate_updates(int thread_id, double learning_rate) {
     for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-        this->layers[l_i]->calculate_updates(&this->updates[l_i], this->outputs[l_i], learning_rate);
+        this->layers[l_i]->calculate_updates(&(this->updates[l_i]), this->gradients[thread_id][l_i],
+                                             this->outputs[thread_id][l_i], learning_rate);
     }
 }
 
@@ -69,11 +82,10 @@ void DenseNetwork::apply_updates(int batch_size) {
 }
 
 void DenseNetwork::clear_updates() {
-    for (int l_i = 0; l_i < this->layers.size(); l_i++) {
-        for (int n_i = 0; n_i < this->layers[l_i]->output_size; n_i++) {
-            for (int w_i = 0; w_i < this->layers[l_i]->input_size + 1; w_i++) {
-                // this->layers[l_i]->updates[n_i][w_i] = 0;
-                this->updates[l_i][n_i][w_i] = 0;
+    for (int j = 0; j < this->updates.size(); j++) {
+        for (int k = 0; k < this->updates[j].size(); k++) {
+            for (int l = 0; l < this->updates[j][k].size(); l++) {
+                this->updates[j][k][l] = 0.0;
             }
         }
     }
@@ -82,6 +94,10 @@ void DenseNetwork::clear_updates() {
 void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double learning_rate_start,
                        double learning_rate_end, bool verbose) {
     double train_start = omp_get_wtime();
+
+    if (learning_rate_end == -1) {
+        learning_rate_end = learning_rate_start;
+    }
 
     for (int epoch = 0; epoch < epochs; epoch++) {
         double epoch_start;
@@ -96,7 +112,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                            std::to_string(0).length() + 1;
 
             std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size / minibatch_size
-                      << " [" << std::string(50, '-') << "]" << std::endl;
+                      << " [" << std::string(50, '.') << "]" << std::endl;
         }
 
         // Random idxs
@@ -112,8 +128,11 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
         }
 
         for (int batch = 0; batch < (dataset.train_size / minibatch_size); batch++) {
+            // #pragma omp parallel for
             for (int i = batch * minibatch_size; i < (batch + 1) * minibatch_size; i++) {
-                if (verbose &&
+                int thread_id = omp_get_thread_num();
+
+                if (thread_id == 0 && verbose &&
                     (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50) > progress) {
                     progress = (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50);
                     double acc = (double)correct / (i + 1);
@@ -124,25 +143,31 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
 
                     std::cout << "\033[F" << std::string(data_padding, ' ') << batch + 1 << "/"
                               << dataset.train_size / minibatch_size << " ["
-                              << std::string(progress - 1, '=') << ">" << std::string(50 - progress, '-')
+                              << std::string(progress - 1, '=') << ">" << std::string(50 - progress, '.')
                               << "] Train accuracy: " << acc << " | Epoch ETA: " << epoch_eta
                               << "s\033[K" << std::endl;
                 }
 
-                this->forwardpropagate(dataset.train_data[idxs[i]]);
+                this->forwardpropagate(thread_id, dataset.train_data[idxs[i]]);
                 std::vector<double> target_vector(this->layer_sizes[this->layer_sizes.size() - 1], 0);
                 target_vector[dataset.train_labels[idxs[i]]] = 1;
 
-                // Add if correct
-                if (std::distance(outputs[outputs.size() - 1].begin(),
-                                  std::max_element(outputs[outputs.size() - 1].begin(),
-                                                   outputs[outputs.size() - 1].end())) ==
-                    dataset.train_labels[idxs[i]]) {
-                    correct++;
+#pragma omp critical
+                {
+                    // Add if correct
+                    if (std::distance(
+                            this->outputs[thread_id][outputs[0].size() - 1].begin(),
+                            std::max_element(this->outputs[thread_id][outputs[0].size() - 1].begin(),
+                                             this->outputs[thread_id][outputs[0].size() - 1].end())) ==
+                        dataset.train_labels[idxs[i]]) {
+                        correct++;
+                    }
                 }
 
-                this->backpropagate(target_vector);
-                this->calculate_updates(learning_rate);
+                this->backpropagate(thread_id, target_vector);
+
+#pragma omp critical
+                { this->calculate_updates(thread_id, learning_rate); }
             }
 
             this->apply_updates(minibatch_size);
@@ -168,6 +193,7 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
     }
 }
 
+// TODO Paralellize
 double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets) {
     int correct = 0;
 

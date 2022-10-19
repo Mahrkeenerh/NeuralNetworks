@@ -19,13 +19,15 @@ class SoftmaxLayer : public Layer {
     std::vector<double> forwardpropagate(std::vector<double> input) override {
         return this->predict(input);
     };
-    void out_errors(std::vector<double> output, std::vector<double> target_vector) override;
+    void out_errors(std::vector<double> output, std::vector<double> target_vector,
+                    std::vector<double>* gradients) override;
     void backpropagate(Layer* connected_layer, std::vector<double> output,
-                       std::vector<double> target_vector) override {
+                       std::vector<double> target_vector, std::vector<double>* gradients,
+                       std::vector<double> connected_gradients) override {
         throw std::runtime_error("SoftmaxLayer::backpropagate() is not valid");
     }
-    void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input_data,
-                           double learning_rate) override;
+    void calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> gradients,
+                           std::vector<double> input, double learning_rate) override;
     void apply_updates(std::vector<std::vector<double>> updates, int minibatch_size) override;
 };
 

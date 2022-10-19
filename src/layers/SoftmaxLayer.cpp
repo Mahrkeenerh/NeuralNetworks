@@ -1,7 +1,6 @@
 #include "SoftmaxLayer.hpp"
 
 #include <algorithm>
-#include <iostream>
 
 SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
     this->input_size = input_size;
@@ -9,7 +8,6 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 1.0));
-    this->gradients = std::vector<double>(output_size, 0.0);
 
     // Momentum value
     this->beta1 = 0.2;
@@ -21,6 +19,7 @@ SoftmaxLayer::SoftmaxLayer(int input_size, int output_size) {
         for (int j = 0; j < input_size + 1; j++) {
             // He initialization with normal distribution
             // this->weights[i][j] = randn() * sqrt(2.0 / input_size);
+
             // Initialize weights with random values with uniform distribution
             // [-(1 / sqrt(input_size)), 1 / sqrt(input_size)]
             this->weights[i][j] =
@@ -62,22 +61,24 @@ std::vector<double> SoftmaxLayer::predict(std::vector<double> input) {
     return output;
 }
 
-void SoftmaxLayer::out_errors(std::vector<double> output, std::vector<double> target_vector) {
+void SoftmaxLayer::out_errors(std::vector<double> output, std::vector<double> target_vector,
+                              std::vector<double>* gradients) {
     // Derivative of cross entropy loss
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] = output[n_i] - target_vector[n_i];
+        (*gradients)[n_i] = output[n_i] - target_vector[n_i];
     }
 }
 
 void SoftmaxLayer::calculate_updates(std::vector<std::vector<double>>* updates,
-                                     std::vector<double> input, double learning_rate) {
+                                     std::vector<double> gradients, std::vector<double> input,
+                                     double learning_rate) {
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+        update = gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
         (*updates)[n_i][0] += update;
 
         for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
-            update = this->gradients[n_i] * learning_rate * input[w_i - 1] +
+            update = gradients[n_i] * learning_rate * input[w_i - 1] +
                      this->beta1 * this->weight_delta[n_i][w_i];
             (*updates)[n_i][w_i] += update;
         }

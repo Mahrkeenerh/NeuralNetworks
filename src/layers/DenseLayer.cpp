@@ -1,7 +1,5 @@
 #include "DenseLayer.hpp"
 
-#include <iostream>
-
 DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(double)) {
     this->input_size = input_size;
     this->output_size = output_size;
@@ -19,8 +17,6 @@ DenseLayer::DenseLayer(int input_size, int output_size, double (*activation)(dou
 
     this->weights =
         std::vector<std::vector<double>>(output_size, std::vector<double>(input_size + 1, 0.0));
-    this->gradients = std::vector<double>(output_size, 0.0);
-    // this->batch_errors = std::vector<double>(output_size, 0.0);
 
     // Momentum value
     this->beta1 = 0.3;
@@ -77,44 +73,46 @@ std::vector<double> DenseLayer::predict(std::vector<double> input) {
     return output;
 }
 
-void DenseLayer::out_errors(std::vector<double> output, std::vector<double> target_vector) {
+void DenseLayer::out_errors(std::vector<double> output, std::vector<double> target_vector,
+                            std::vector<double>* gradients) {
     // Calculate errors - MSE
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] = output[n_i] - target_vector[n_i];
+        (*gradients)[n_i] = output[n_i] - target_vector[n_i];
     }
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] *= this->derivative(output[n_i]);
+        (*gradients)[n_i] *= this->derivative(output[n_i]);
     }
 }
 
 void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> output,
-                               std::vector<double> target_vector) {
+                               std::vector<double> target_vector, std::vector<double>* gradients,
+                               std::vector<double> connected_gradients) {
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] = 0;
+        (*gradients)[n_i] = 0;
 
         for (int o_i = 0; o_i < connected_layer->output_size; o_i++) {
-            this->gradients[n_i] +=
-                connected_layer->gradients[o_i] * connected_layer->weights[o_i][n_i + 1];
+            (*gradients)[n_i] += connected_gradients[o_i] * connected_layer->weights[o_i][n_i + 1];
         }
     }
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        this->gradients[n_i] *= this->derivative(output[n_i]);
+        (*gradients)[n_i] *= this->derivative(output[n_i]);
     }
 }
 
-void DenseLayer::calculate_updates(std::vector<std::vector<double>>* updates, std::vector<double> input,
+void DenseLayer::calculate_updates(std::vector<std::vector<double>>* updates,
+                                   std::vector<double> gradients, std::vector<double> input,
                                    double learning_rate) {
     double update;
     for (int n_i = 0; n_i < this->output_size; n_i++) {
-        update = this->gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+        update = gradients[0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
         (*updates)[n_i][0] += update;
 
         for (int w_i = 1; w_i < this->input_size + 1; w_i++) {
-            update = this->gradients[n_i] * learning_rate * input[w_i - 1] +
+            update = gradients[n_i] * learning_rate * input[w_i - 1] +
                      this->beta1 * this->weight_delta[n_i][w_i];
             (*updates)[n_i][w_i] += update;
         }

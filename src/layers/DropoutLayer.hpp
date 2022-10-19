@@ -10,7 +10,8 @@ class DropoutLayer : public Layer {
     DropoutLayer(int output_size, double dropout_chance = 0.5);
 
     std::vector<double> forwardpropagate(std::vector<double> input) override;
-    void out_errors(std::vector<double> output, std::vector<double> target_vector) override {
+    void out_errors(std::vector<double> output, std::vector<double> target_vector,
+                    std::vector<double>* gradients) override {
         throw std::runtime_error("DropoutLayer::out_errors() is not valid");
     };
 

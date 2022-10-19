@@ -87,12 +87,10 @@ int main(int argc, char *argv[]) {
     // measure time
     double start, end;
 
-    for (int i = 0; i < 10; i++) {
-        start = omp_get_wtime();
-        mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
-        end = omp_get_wtime();
-        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
-    }
+    start = omp_get_wtime();
+    mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
+    end = omp_get_wtime();
+    std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
 
     return 0;
 }
