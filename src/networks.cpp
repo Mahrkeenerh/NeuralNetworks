@@ -7,15 +7,7 @@
 #include <numeric>
 
 DenseNetwork::DenseNetwork(int input_size) {
-    // // Create layers
-    // for (int i = 0; i < layer_sizes.size() - 2; i++) {
-    //     this->layers.push_back(new DenseLayer(layer_sizes[i], layer_sizes[i + 1], relu));
-    // }
-
-    // // Create output layer
-    // this->layers.push_back(
-    //     new SoftmaxLayer(layer_sizes[layer_sizes.size() - 2], layer_sizes[layer_sizes.size() - 1]));
-    this->input_size = input_size;
+     this->input_size = input_size;
 
     for (int i = 0; i < omp_get_max_threads(); i++) {
         this->outputs.push_back(
