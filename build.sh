@@ -1,1 +1,1 @@
-"g++.exe" -fdiagnostics-color=always -g $(find . -type f -iregex '.*\.[c|h]pp') -o 'main' -fopenmp -Ofast
+"g++" -fdiagnostics-color=always -g $(find . -type f -iregex '.*\.[c|h]pp') -fopenmp -Ofast -o main
