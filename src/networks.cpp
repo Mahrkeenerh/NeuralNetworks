@@ -7,7 +7,7 @@
 #include <numeric>
 
 DenseNetwork::DenseNetwork(int input_size) {
-     this->input_size = input_size;
+    this->input_size = input_size;
 
     for (int i = 0; i < omp_get_max_threads(); i++) {
         this->outputs.push_back(
@@ -64,7 +64,7 @@ void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vecto
 
     for (int l_i = this->size - 2; l_i >= 0; l_i--) {
         this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[thread_id][l_i + 1],
-                                         target_vector, &(this->gradients[thread_id][l_i]),
+                                         &(this->gradients[thread_id][l_i]),
                                          this->gradients[thread_id][l_i + 1]);
     }
 }

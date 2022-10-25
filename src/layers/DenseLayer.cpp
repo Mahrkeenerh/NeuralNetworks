@@ -129,8 +129,7 @@ void DenseLayer::out_errors(std::vector<double> output, std::vector<double> targ
 }
 
 void DenseLayer::backpropagate(Layer* connected_layer, std::vector<double> output,
-                               std::vector<double> target_vector, std::vector<double>* gradients,
-                               std::vector<double> connected_gradients) {
+                               std::vector<double>* gradients, std::vector<double> connected_gradients) {
     for (int n_i = 0; n_i < this->output_size; n_i++) {
         (*gradients)[n_i] = 0;
 
