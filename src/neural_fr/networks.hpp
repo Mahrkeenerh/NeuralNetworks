@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "datasets.hpp"
-#include "layers/layers.hpp"
+#include "layers.hpp"
 
 class DenseNetwork {
    public:
