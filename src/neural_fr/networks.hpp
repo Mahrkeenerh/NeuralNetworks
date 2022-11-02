@@ -34,7 +34,4 @@ class DenseNetwork {
     void clear_updates();
 };
 
-double mse(double output, double target);
-double mse(std::vector<double> outputs, std::vector<double> target);
-
 #endif
