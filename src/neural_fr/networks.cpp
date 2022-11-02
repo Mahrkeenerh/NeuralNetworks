@@ -6,89 +6,62 @@
 #include <iostream>
 #include <numeric>
 
-DenseNetwork::DenseNetwork(int input_size) {
-    this->input_size = input_size;
+DenseNetwork::DenseNetwork(std::vector<Layer*> layers) {
+    this->layers = layers;
+    this->size = layers.size();
 
-    for (int i = 0; i < omp_get_max_threads(); i++) {
-        this->outputs.push_back(
-            std::vector<std::vector<double>>(1, std::vector<double>(input_size, 0.0)));
-        this->gradients.push_back(std::vector<std::vector<double>>());
+    int num_threads = omp_get_max_threads();
+
+    this->layers[0]->setup(nullptr, this->layers[1], num_threads);
+
+    for (int i = 1; i < this->size - 1; i++) {
+        this->layers[i]->setup(this->layers[i - 1], this->layers[i + 1], num_threads);
     }
 
-    this->updates = std::vector<std::vector<std::vector<double>>>();
+    this->layers[this->size - 1]->setup(this->layers[this->size - 2], nullptr, num_threads);
 }
 
-DenseNetwork DenseNetwork::add_layer(Layer* layer) {
-    int input = this->size == 0 ? this->input_size : this->layers[this->size - 1]->output_size;
+std::vector<double> DenseNetwork::predict(std::vector<double> input, int thread_id) {
+    this->layers[0]->predict(input, thread_id);
 
-    layer->setup(input);
-    this->layers.push_back(layer);
-    this->size++;
-
-    for (int i = 0; i < omp_get_max_threads(); i++) {
-        this->outputs[i].push_back(std::vector<double>(layer->output_size, 0.0));
-        this->gradients[i].push_back(std::vector<double>(layer->output_size, 0.0));
+    for (int i = 1; i < this->size; i++) {
+        this->layers[i]->predict(thread_id);
     }
 
-    this->updates.push_back(std::vector<std::vector<double>>(layer->output_size));
-
-    for (int j = 0; j < layer->output_size; j++) {
-        this->updates[this->size - 1][j] = std::vector<double>(layer->input_size + 1, 0.0);
-    }
-
-    return *this;
+    return this->layers[this->size - 1]->get_outputs({thread_id});
 }
 
-std::vector<double> DenseNetwork::predict(std::vector<double> input) {
-    std::vector<double> output = input;
+void DenseNetwork::forwardpropagate(std::vector<double> input, int thread_id) {
+    this->layers[0]->forwardpropagate(input, thread_id);
 
-    for (int i = 0; i < this->size; i++) {
-        output = this->layers[i]->predict(output);
-    }
-
-    return output;
-}
-
-void DenseNetwork::forwardpropagate(int thread_id, std::vector<double> input) {
-    this->outputs[thread_id][0] = input;
-
-    for (int i = 0; i < this->size; i++) {
-        this->outputs[thread_id][i + 1] = this->layers[i]->forwardpropagate(this->outputs[thread_id][i]);
+    for (int i = 1; i < this->size; i++) {
+        this->layers[i]->forwardpropagate(thread_id);
     }
 }
 
 void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vector) {
-    this->layers[this->size - 1]->out_errors(
-        this->outputs[thread_id][this->outputs[thread_id].size() - 1], target_vector,
-        &(this->gradients[thread_id][this->gradients[thread_id].size() - 1]));
+    this->layers[this->size - 1]->out_errors(thread_id, target_vector);
 
-    for (int l_i = this->size - 2; l_i >= 0; l_i--) {
-        this->layers[l_i]->backpropagate(this->layers[l_i + 1], this->outputs[thread_id][l_i + 1],
-                                         &(this->gradients[thread_id][l_i]),
-                                         this->gradients[thread_id][l_i + 1]);
+    for (int l_i = this->size - 2; l_i >= 1; l_i--) {
+        this->layers[l_i]->backpropagate(thread_id);
     }
 }
 
 void DenseNetwork::calculate_updates(int thread_id, double learning_rate) {
-    for (int l_i = 0; l_i < this->size; l_i++) {
-        this->layers[l_i]->calculate_updates(&(this->updates[l_i]), this->gradients[thread_id][l_i],
-                                             this->outputs[thread_id][l_i], learning_rate);
+    for (int l_i = 1; l_i < this->size; l_i++) {
+        this->layers[l_i]->calculate_updates(thread_id, learning_rate);
     }
 }
 
 void DenseNetwork::apply_updates(int batch_size) {
-    for (int l_i = 0; l_i < this->size; l_i++) {
-        this->layers[l_i]->apply_updates(this->updates[l_i], batch_size);
+    for (int l_i = 1; l_i < this->size; l_i++) {
+        this->layers[l_i]->apply_updates(batch_size);
     }
 }
 
 void DenseNetwork::clear_updates() {
-    for (int j = 0; j < this->updates.size(); j++) {
-        for (int k = 0; k < this->updates[j].size(); k++) {
-            for (int l = 0; l < this->updates[j][k].size(); l++) {
-                this->updates[j][k][l] = 0.0;
-            }
-        }
+    for (int l_i = 1; l_i < this->size; l_i++) {
+        this->layers[l_i]->clear_updates();
     }
 }
 
@@ -149,17 +122,15 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
                               << "s\033[K" << std::endl;
                 }
 
-                this->forwardpropagate(thread_id, dataset.train_data[idxs[i]]);
+                this->forwardpropagate(dataset.train_data[idxs[i]], thread_id);
                 std::vector<double> target_vector(this->layers[this->size - 1]->output_size, 0);
                 target_vector[dataset.train_labels[idxs[i]]] = 1;
 
 #pragma omp critical
                 {
+                    std::vector<double> output = this->layers[this->size - 1]->get_outputs({thread_id});
                     // Add if correct
-                    if (std::distance(
-                            this->outputs[thread_id][outputs[0].size() - 1].begin(),
-                            std::max_element(this->outputs[thread_id][outputs[0].size() - 1].begin(),
-                                             this->outputs[thread_id][outputs[0].size() - 1].end())) ==
+                    if (std::distance(output.begin(), std::max_element(output.begin(), output.end())) ==
                         dataset.train_labels[idxs[i]]) {
                         correct++;
                     }
@@ -200,7 +171,8 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
 
 #pragma omp parallel for
     for (int i = 0; i < inputs.size(); i++) {
-        std::vector<double> outputs = this->predict(inputs[i]);
+        int thread_id = omp_get_thread_num();
+        std::vector<double> outputs = this->predict(inputs[i], thread_id);
         int max_index = 0;
 
         for (int j = 0; j < outputs.size(); j++) {

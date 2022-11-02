@@ -8,11 +8,11 @@
 
 class DenseNetwork {
    public:
-    DenseNetwork(int input_size);
+    DenseNetwork(std::vector<Layer*> layers);
 
     DenseNetwork add_layer(Layer* layer);
 
-    std::vector<double> predict(std::vector<double> input);
+    std::vector<double> predict(std::vector<double> input, int thread_id = 0);
 
     void fit(Dataset1D dataset, int epochs, int minibatch_size, double learning_rate_start,
              double learning_rate_end = -1, bool verbose = true);
@@ -20,13 +20,13 @@ class DenseNetwork {
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
 
    private:
-    int input_size, size = 0;
+    int size = 0;
     std::vector<Layer*> layers;
-    std::vector<std::vector<std::vector<double>>> outputs;
-    std::vector<std::vector<std::vector<double>>> gradients;
-    std::vector<std::vector<std::vector<double>>> updates;
+    // std::vector<std::vector<std::vector<double>>> outputs;
+    // std::vector<std::vector<std::vector<double>>> gradients;
+    // std::vector<std::vector<std::vector<double>>> updates;
 
-    void forwardpropagate(int thread_id, std::vector<double> input);
+    void forwardpropagate(std::vector<double> input, int thread_id);
     void backpropagate(int thread_id, std::vector<double> target_vector);
 
     void calculate_updates(int thread_id, double learning_rate);
