@@ -78,23 +78,6 @@ class DropoutLayer : public Layer {
     double dropout_chance;
 };
 
-class NoiseLayer : public Layer {
-   public:
-    NoiseLayer(double noise_chance, double noise_scale = 0.1);
-    NoiseLayer(int width, double noise_chance, double noise_scale = 0.1);
-    void setup(int input_size) override;
-
-    std::vector<double> forwardpropagate(std::vector<double> input) override;
-    void out_errors(std::vector<double> output, std::vector<double> target_vector,
-                    std::vector<double>* gradients) override {
-        throw std::runtime_error("NoiseLayer::out_errors() is not valid");
-    };
-
-   private:
-    double noise_chance;
-    double noise_scale;
-};
-
 class SoftmaxLayer : public Layer {
    public:
     SoftmaxLayer(int width);
