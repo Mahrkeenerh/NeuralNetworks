@@ -4,17 +4,6 @@
 #include <fstream>
 #include <sstream>
 
-Dataset1D::Dataset1D(std::vector<std::vector<double>> data, std::vector<int> labels) {
-    this->train_data = data;
-    this->train_labels = labels;
-
-    this->test_data = data;
-    this->test_labels = labels;
-
-    this->train_size = data.size();
-    this->test_size = data.size();
-}
-
 Dataset1D::Dataset1D(int train_size, int test_size, bool normalize) {
     this->train_size = train_size;
     this->test_size = test_size;

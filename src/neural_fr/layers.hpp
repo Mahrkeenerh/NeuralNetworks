@@ -45,11 +45,11 @@ class InputLayer : public Layer {
     void setup(Layer* previous, Layer* next, int max_threads) override;
 
     std::vector<std::vector<double>> outputs;
-    std::vector<std::vector<double>> gradients;
-    std::vector<std::vector<double>> updates;
 
+    // network functions
     std::vector<double> predict(std::vector<double> input, int thread_id) override;
 
+    // layer functions
     std::vector<double> get_outputs(std::vector<int> loc) override;
 
    private:

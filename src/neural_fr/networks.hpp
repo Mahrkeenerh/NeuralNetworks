@@ -14,7 +14,7 @@ class DenseNetwork {
 
     std::vector<double> predict(std::vector<double> input, int thread_id = 0);
 
-    void fit(Dataset1D dataset, int epochs, int minibatch_size, double learning_rate_start,
+    void fit(Dataset1D dataset, double split, int epochs, int minibatch_size, double learning_rate_start,
              double learning_rate_end = -1, bool verbose = true);
 
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
@@ -32,6 +32,9 @@ class DenseNetwork {
     void calculate_updates(int thread_id, double learning_rate);
     void apply_updates(int minibatch_size);
     void clear_updates();
+
+    double valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
+                          int split_step, int valid_size);
 };
 
 #endif

@@ -65,73 +65,101 @@ void DenseNetwork::clear_updates() {
     }
 }
 
-void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double learning_rate_start,
-                       double learning_rate_end, bool verbose) {
+int get_train_id(int split_step, int train_size, int valid_size, int i) {
+    int valid_start = valid_size * (split_step - 1);
+    int valid_end = valid_start + valid_size;
+
+    if (i < valid_start) {
+        return i;
+    } else {
+        return (i + valid_size) % (train_size + valid_size);
+    }
+}
+
+void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
+                       double learning_rate_start, double learning_rate_end, bool verbose) {
     double train_start = omp_get_wtime();
+    double epoch_start, epoch_end, epoch_eta, epoch_time, elapsed_time, eta_s;
+
+    int padding, progress, correct;
+
+    double learning_rate;
+    double train_acc, valid_acc;
 
     if (learning_rate_end == -1) {
         learning_rate_end = learning_rate_start;
     }
 
+    int split_step = 0;
+    int train_size = dataset.train_size * (1 - split);
+    int valid_size = dataset.train_size - train_size;
+
+    std::vector<std::vector<double>> data = dataset.train_data;
+    std::vector<int> labels = dataset.train_labels;
+
+    std::vector<int> idxs(train_size);
+
     for (int epoch = 0; epoch < epochs; epoch++) {
-        double epoch_start;
         epoch_start = omp_get_wtime();
+        correct = 0;
 
         // Visual loading bar
-        int progress, data_padding;
-        int correct = 0;
         if (verbose) {
             progress = 0;
-            data_padding = std::to_string(dataset.train_size / minibatch_size).length() -
-                           std::to_string(0).length() + 1;
+            padding =
+                std::to_string(train_size / minibatch_size).length() - std::to_string(0).length() + 1;
 
-            std::cout << std::string(data_padding, ' ') << "0/" << dataset.train_size / minibatch_size
-                      << " [" << std::string(50, '.') << "]" << std::endl;
+            std::cout << std::string(padding, ' ') << "0/" << train_size / minibatch_size << " ["
+                      << std::string(50, '.') << "]" << std::endl;
         }
 
-        // Random idxs
-        std::vector<int> idxs(dataset.train_size);
+        // Cross-validation split
+        if (split_step * epochs * split <= epoch) {
+            split_step++;
+        }
+
+        // Shuffle data
         std::iota(idxs.begin(), idxs.end(), 0);
         std::random_shuffle(idxs.begin(), idxs.end());
 
-        double learning_rate = learning_rate_start;
+        learning_rate = learning_rate_start;
         if (epochs > 1) {
             learning_rate =
                 (1 - pow((double)epoch / (epochs - 1), 2)) * (learning_rate_start - learning_rate_end) +
                 learning_rate_end;
         }
 
-        for (int batch = 0; batch < (dataset.train_size / minibatch_size); batch++) {
+        for (int batch = 0; batch < (train_size / minibatch_size); batch++) {
 #pragma omp parallel for
             for (int i = batch * minibatch_size; i < (batch + 1) * minibatch_size; i++) {
                 int thread_id = omp_get_thread_num();
 
                 if (thread_id == 0 && verbose &&
-                    (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50) > progress) {
-                    progress = (int)((double)(batch + 1) / (dataset.train_size / minibatch_size) * 50);
-                    double acc = (double)correct / (i + 1);
-                    data_padding = std::to_string(dataset.train_size / minibatch_size).length() -
-                                   std::to_string(minibatch_size + 1).length() + 1;
-                    double epoch_eta =
-                        (double)(omp_get_wtime() - epoch_start) / (i + 1) * (dataset.train_size - i - 1);
+                    (int)((double)(batch + 1) / (train_size / minibatch_size) * 50) > progress) {
+                    progress = (int)((double)(batch + 1) / (train_size / minibatch_size) * 50);
+                    train_acc = (double)correct / (i + 1);
+                    padding = std::to_string(train_size / minibatch_size).length() -
+                              std::to_string(minibatch_size + 1).length() + 1;
+                    epoch_eta = (double)(omp_get_wtime() - epoch_start) / (i + 1) * (train_size - i - 1);
 
-                    std::cout << "\033[F" << std::string(data_padding, ' ') << batch + 1 << "/"
-                              << dataset.train_size / minibatch_size << " ["
-                              << std::string(progress - 1, '=') << ">" << std::string(50 - progress, '.')
-                              << "] Train accuracy: " << acc << " | Epoch ETA: " << epoch_eta
+                    std::cout << "\033[F" << std::string(padding, ' ') << batch + 1 << "/"
+                              << train_size / minibatch_size << " [" << std::string(progress - 1, '=')
+                              << ">" << std::string(50 - progress, '.')
+                              << "] Train accuracy: " << train_acc << " | Epoch ETA: " << epoch_eta
                               << "s\033[K" << std::endl;
                 }
 
-                this->forwardpropagate(dataset.train_data[idxs[i]], thread_id);
+                this->forwardpropagate(data[get_train_id(split_step, train_size, valid_size, idxs[i])],
+                                       thread_id);
                 std::vector<double> target_vector(this->layers[this->size - 1]->output_size, 0);
-                target_vector[dataset.train_labels[idxs[i]]] = 1;
+                target_vector[labels[get_train_id(split_step, train_size, valid_size, idxs[i])]] = 1;
 
 #pragma omp critical
                 {
                     std::vector<double> output = this->layers[this->size - 1]->get_outputs({thread_id});
                     // Add if correct
                     if (std::distance(output.begin(), std::max_element(output.begin(), output.end())) ==
-                        dataset.train_labels[idxs[i]]) {
+                        labels[get_train_id(split_step, train_size, valid_size, idxs[i])]) {
                         correct++;
                     }
                 }
@@ -149,18 +177,18 @@ void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size, double
 
         // Stats
         if (verbose) {
-            double train_accuracy = (double)correct / dataset.train_size;
-            double test_accuracy = this->accuracy(dataset.test_data, dataset.test_labels);
-            double epoch_end = omp_get_wtime();
+            train_acc = (double)correct / train_size;
+            valid_acc = this->valid_accuracy(data, labels, split_step, valid_size);
+            epoch_end = omp_get_wtime();
 
-            int epoch_padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
-            double epoch_time = (double)(epoch_end - epoch_start);
-            double elapsed_time = (double)(epoch_end - train_start);
-            double eta_s = (elapsed_time / (epoch + 1)) * (epochs - epoch - 1);
+            padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
+            epoch_time = (double)(epoch_end - epoch_start);
+            elapsed_time = (double)(epoch_end - train_start);
+            eta_s = (elapsed_time / (epoch + 1)) * (epochs - epoch - 1);
 
-            std::cout << "\033[FEpoch " << std::string(epoch_padding, ' ') << epoch + 1 << "/" << epochs
-                      << " | Train Accuracy: " << train_accuracy << " | Test Accuracy: " << test_accuracy
-                      << " | Learning rate: " << learning_rate << " | Epoch time: " << epoch_time
+            std::cout << "\033[FEpoch " << std::string(padding, ' ') << epoch + 1 << "/" << epochs
+                      << " | Train Acc: " << train_acc << " | Valid Acc: " << valid_acc
+                      << " | Learning rate: " << learning_rate << " | Time: " << epoch_time
                       << "s | ETA: " << eta_s << "s\033[K" << std::endl;
         }
     }
@@ -187,4 +215,31 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
     }
 
     return std::accumulate(correct.begin(), correct.end(), 0) / (double)inputs.size();
+}
+
+double DenseNetwork::valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
+                                    int split_step, int valid_size) {
+    std::vector<int> correct = std::vector(omp_get_max_threads(), 0);
+
+    int valid_start = valid_size * (split_step - 1);
+    int valid_end = valid_start + valid_size;
+
+#pragma omp parallel for
+    for (int i = valid_start; i < valid_end; i++) {
+        int thread_id = omp_get_thread_num();
+        std::vector<double> outputs = this->predict(inputs[i], thread_id);
+        int max_index = 0;
+
+        for (int j = 0; j < outputs.size(); j++) {
+            if (outputs[j] > outputs[max_index]) {
+                max_index = j;
+            }
+        }
+
+        if (max_index == targets[i]) {
+            correct[omp_get_thread_num()]++;
+        }
+    }
+
+    return std::accumulate(correct.begin(), correct.end(), 0) / (double)valid_size;
 }

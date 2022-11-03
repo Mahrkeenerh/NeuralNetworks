@@ -10,7 +10,6 @@ class Dataset1D {
 
     int train_size, test_size;
 
-    Dataset1D(std::vector<std::vector<double>> data, std::vector<int> labels);
     Dataset1D(int train_size = -1, int test_size = -1, bool normalize = true);
 
    private:
