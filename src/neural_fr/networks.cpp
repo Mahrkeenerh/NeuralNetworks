@@ -73,17 +73,6 @@ void DenseNetwork::before_batch() {
     }
 }
 
-int get_train_id(int split_step, int train_size, int valid_size, int i) {
-    int valid_start = valid_size * (split_step - 1);
-    int valid_end = valid_start + valid_size;
-
-    if (i < valid_start) {
-        return i;
-    } else {
-        return (i + valid_size) % (train_size + valid_size);
-    }
-}
-
 void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
                        double learning_rate_start, double learning_rate_end, bool verbose) {
     double train_start = omp_get_wtime();
@@ -105,7 +94,8 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
     std::vector<std::vector<double>> data = dataset.train_data;
     std::vector<int> labels = dataset.train_labels;
 
-    std::vector<int> idxs(train_size);
+    std::vector<int> train_i(train_size);
+    std::vector<int> valid_i(valid_size);
 
     for (int epoch = 0; epoch < epochs; epoch++) {
         epoch_start = omp_get_wtime();
@@ -123,12 +113,16 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
 
         // Cross-validation split
         if (split_step * epochs * split <= epoch) {
+            std::iota(train_i.begin(), train_i.end() - split_step * valid_size, 0);
+            std::iota(train_i.end() - split_step * valid_size, train_i.end(),
+                      train_size - (split_step - 1) * valid_size);
+
+            std::iota(valid_i.begin(), valid_i.end(), train_size - split_step * valid_size);
+
             split_step++;
         }
 
-        // Shuffle data
-        std::iota(idxs.begin(), idxs.end(), 0);
-        std::random_shuffle(idxs.begin(), idxs.end());
+        std::random_shuffle(train_i.begin() + valid_size, train_i.end());
 
         learning_rate = learning_rate_start;
         if (epochs > 1) {
@@ -158,17 +152,16 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
                               << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
                 }
 
-                this->forwardpropagate(data[get_train_id(split_step, train_size, valid_size, idxs[i])],
-                                       thread_id);
+                this->forwardpropagate(data[train_i[i]], thread_id);
                 std::vector<double> target_vector(this->layers[this->size - 1]->output_size, 0);
-                target_vector[labels[get_train_id(split_step, train_size, valid_size, idxs[i])]] = 1;
+                target_vector[labels[train_i[i]]] = 1;
 
 #pragma omp critical
                 {
                     std::vector<double> output = this->layers[this->size - 1]->get_outputs({thread_id});
                     // Add if correct
                     if (std::distance(output.begin(), std::max_element(output.begin(), output.end())) ==
-                        labels[get_train_id(split_step, train_size, valid_size, idxs[i])]) {
+                        labels[train_i[i]]) {
                         correct++;
                     }
                 }
@@ -187,7 +180,7 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
         // Stats
         if (verbose) {
             train_acc = (double)correct / train_size;
-            valid_acc = this->valid_accuracy(data, labels, split_step, valid_size);
+            valid_acc = this->valid_accuracy(data, labels, valid_i);
             epoch_end = omp_get_wtime();
 
             padding = std::to_string(epochs).length() - std::to_string(epoch + 1).length();
@@ -227,16 +220,13 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
 }
 
 double DenseNetwork::valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
-                                    int split_step, int valid_size) {
+                                    std::vector<int> valid_i) {
     std::vector<int> correct = std::vector(omp_get_max_threads(), 0);
 
-    int valid_start = valid_size * (split_step - 1);
-    int valid_end = valid_start + valid_size;
-
 #pragma omp parallel for
-    for (int i = valid_start; i < valid_end; i++) {
+    for (int i = 0; i < valid_i.size(); i++) {
         int thread_id = omp_get_thread_num();
-        std::vector<double> outputs = this->predict(inputs[i], thread_id);
+        std::vector<double> outputs = this->predict(inputs[valid_i[i]], thread_id);
         int max_index = 0;
 
         for (int j = 0; j < outputs.size(); j++) {
@@ -245,10 +235,10 @@ double DenseNetwork::valid_accuracy(std::vector<std::vector<double>> inputs, std
             }
         }
 
-        if (max_index == targets[i]) {
+        if (max_index == targets[valid_i[i]]) {
             correct[omp_get_thread_num()]++;
         }
     }
 
-    return std::accumulate(correct.begin(), correct.end(), 0) / (double)valid_size;
+    return std::accumulate(correct.begin(), correct.end(), 0) / (double)valid_i.size();
 }

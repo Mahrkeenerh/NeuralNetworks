@@ -15,7 +15,7 @@ void mnist_net(int epochs, int minibatch_size, double learning_rate_start, doubl
     DenseNetwork network(
         {new InputLayer(784), new DenseLayer(128, leaky_relu), new DenseLayer(10, softmax)});
 
-    network.fit(dataset, 0.1, epochs, minibatch_size, learning_rate_start, learning_rate_end);
+    network.fit(dataset, 0.01, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 
     std::cout << "Accuracy: " << network.accuracy(dataset.test_data, dataset.test_labels) << std::endl;
 

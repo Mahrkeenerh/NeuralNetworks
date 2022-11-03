@@ -33,7 +33,7 @@ class DenseNetwork {
     void before_batch();
 
     double valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
-                          int split_step, int valid_size);
+                          std::vector<int> valid_i);
 };
 
 #endif
