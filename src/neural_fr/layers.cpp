@@ -223,30 +223,64 @@ std::vector<double> DenseLayer::get_gradients(std::vector<int> loc) { return thi
 DropoutLayer::DropoutLayer(double dropout_chance) { this->dropout_chance = dropout_chance; }
 
 void DropoutLayer::setup(Layer* previous, Layer* next, int thread_count) {
-    this->input_size = previous->output_size;
-    this->output_size = this->input_size;
-
     this->previous = previous;
     this->next = next;
 
-    this->weights = std::vector<std::vector<double>>(this->input_size,
-                                                     std::vector<double>(this->input_size + 1, 1.0));
+    this->input_size = previous->output_size;
+    this->output_size = this->input_size;
+
+    this->weights = std::vector<std::vector<double>>(this->output_size,
+                                                     std::vector<double>(this->input_size + 1, 0.0));
+    this->outputs = std::vector<std::vector<double>>(thread_count);
+    this->gradients =
+        std::vector<std::vector<double>>(thread_count, std::vector<double>(this->output_size, 0.0));
+
+    this->dropout_mask =
+        std::vector<std::vector<bool>>(thread_count, std::vector<bool>(this->output_size, false));
+
+    for (int n_i = 0; n_i < this->input_size; n_i++) {
+        this->weights[n_i][n_i + 1] = 1.0;
+    }
 }
 
-std::vector<double> DropoutLayer::forwardpropagate(int thread_id) {
-    std::vector<double> prev_output = this->previous->get_outputs({thread_id});
+std::vector<double> DropoutLayer::predict(int thread_id) {
+    this->outputs[thread_id] = this->previous->get_outputs({thread_id});
+    return this->outputs[thread_id];
+}
+
+void DropoutLayer::forwardpropagate(int thread_id) {
+    this->outputs[thread_id] = this->previous->get_outputs({thread_id});
 
     // Calculate output for each neuron
     for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->outputs[thread_id][n_i] *= this->dropout_mask[thread_id][n_i];
+    }
+};
+
+void DropoutLayer::backpropagate(int thread_id) {
+    std::vector<double> next_gradients = this->next->get_gradients({thread_id});
+    std::vector<std::vector<double>> next_weights = this->next->get_weights();
+
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
+        this->gradients[thread_id][n_i] = 0;
+
+        for (int o_i = 0; o_i < this->next->output_size; o_i++) {
+            this->gradients[thread_id][n_i] += next_gradients[o_i] * next_weights[o_i][n_i + 1];
+        }
+
+        this->gradients[thread_id][n_i] *= this->dropout_mask[thread_id][n_i];
+    }
+}
+
+void DropoutLayer::before_batch(int thread_id) {
+    for (int n_i = 0; n_i < this->output_size; n_i++) {
         if (rand() / (double)RAND_MAX > this->dropout_chance) {
-            this->outputs[thread_id][n_i] = prev_output[n_i] * (1.0 / (1.0 - this->dropout_chance));
+            this->dropout_mask[thread_id][n_i] = true;
         } else {
-            this->outputs[thread_id][n_i] = 0.0;
+            this->dropout_mask[thread_id][n_i] = false;
         }
     }
-
-    return this->outputs[thread_id];
-};
+}
 
 std::vector<std::vector<double>> DropoutLayer::get_weights() { return this->weights; }
 

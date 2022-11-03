@@ -22,9 +22,6 @@ class DenseNetwork {
    private:
     int size = 0;
     std::vector<Layer*> layers;
-    // std::vector<std::vector<std::vector<double>>> outputs;
-    // std::vector<std::vector<std::vector<double>>> gradients;
-    // std::vector<std::vector<std::vector<double>>> updates;
 
     void forwardpropagate(std::vector<double> input, int thread_id);
     void backpropagate(int thread_id, std::vector<double> target_vector);
@@ -32,6 +29,8 @@ class DenseNetwork {
     void calculate_updates(int thread_id, double learning_rate);
     void apply_updates(int minibatch_size);
     void clear_updates();
+
+    void before_batch();
 
     double valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
                           int split_step, int valid_size);

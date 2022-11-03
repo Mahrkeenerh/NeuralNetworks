@@ -65,6 +65,14 @@ void DenseNetwork::clear_updates() {
     }
 }
 
+void DenseNetwork::before_batch() {
+    for (int thread_id = 0; thread_id < omp_get_max_threads(); thread_id++) {
+        for (int l_i = 1; l_i < this->size; l_i++) {
+            this->layers[l_i]->before_batch(thread_id);
+        }
+    }
+}
+
 int get_train_id(int split_step, int train_size, int valid_size, int i) {
     int valid_start = valid_size * (split_step - 1);
     int valid_end = valid_start + valid_size;
@@ -130,6 +138,8 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
         }
 
         for (int batch = 0; batch < (train_size / minibatch_size); batch++) {
+            before_batch();
+
 #pragma omp parallel for
             for (int i = batch * minibatch_size; i < (batch + 1) * minibatch_size; i++) {
                 int thread_id = omp_get_thread_num();
@@ -144,9 +154,8 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
 
                     std::cout << "\033[F" << std::string(padding, ' ') << batch + 1 << "/"
                               << train_size / minibatch_size << " [" << std::string(progress - 1, '=')
-                              << ">" << std::string(50 - progress, '.')
-                              << "] Train accuracy: " << train_acc << " | Epoch ETA: " << epoch_eta
-                              << "s\033[K" << std::endl;
+                              << ">" << std::string(50 - progress, '.') << "] Train acc: " << train_acc
+                              << " | Epoch ETA: " << epoch_eta << "s\033[K" << std::endl;
                 }
 
                 this->forwardpropagate(data[get_train_id(split_step, train_size, valid_size, idxs[i])],

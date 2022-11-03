@@ -12,8 +12,9 @@
 
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
-    DenseNetwork network(
-        {new InputLayer(784), new DenseLayer(128, leaky_relu), new DenseLayer(10, softmax)});
+    DenseNetwork network({new InputLayer(784), new DropoutLayer(0.5), new DenseLayer(256, leaky_relu),
+                          new DropoutLayer(0.5), new DenseLayer(128, leaky_relu), new DropoutLayer(0.5),
+                          new DenseLayer(10, softmax)});
 
     network.fit(dataset, 0.1, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 

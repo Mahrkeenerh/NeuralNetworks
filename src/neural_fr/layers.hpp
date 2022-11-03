@@ -14,14 +14,15 @@ class Layer {
     int input_size, output_size;
     Layer *previous, *next;
 
+    // network functions
     virtual std::vector<double> predict(std::vector<double> input, int thread_id) { return input; }
     virtual std::vector<double> predict(int thread_id) {
         return this->previous->get_outputs({thread_id});
     }
-    virtual std::vector<double> forwardpropagate(std::vector<double> input, int thread_id) {
-        return this->predict(input, thread_id);
+    virtual void forwardpropagate(std::vector<double> input, int thread_id) {
+        this->predict(input, thread_id);
     }
-    virtual std::vector<double> forwardpropagate(int thread_id) { return this->predict(thread_id); }
+    virtual void forwardpropagate(int thread_id) { this->predict(thread_id); }
 
     virtual void out_errors(int thread_id, std::vector<double> target_vector) {}
     virtual void backpropagate(int thread_id) {}
@@ -30,6 +31,9 @@ class Layer {
     virtual void apply_updates(int minibatch_size) {}
     virtual void clear_updates() {}
 
+    virtual void before_batch(int thread_id) {}
+
+    // layer functions
     virtual std::vector<std::vector<double>> get_weights() { return {}; }
     virtual std::vector<double> get_outputs(std::vector<int> loc) { return std::vector<double>(); }
     virtual std::vector<double> get_gradients(std::vector<int> loc) { return std::vector<double>(); }
@@ -95,13 +99,16 @@ class DropoutLayer : public Layer {
 
     std::vector<std::vector<double>> outputs;
     std::vector<std::vector<double>> gradients;
-    std::vector<std::vector<double>> updates;
 
     // network functions
-    std::vector<double> forwardpropagate(int thread_id) override;
+    std::vector<double> predict(int thread_id) override;
+    void forwardpropagate(int thread_id) override;
     void out_errors(int thread_id, std::vector<double> target_vector) override {
         throw std::runtime_error("DropoutLayer::out_errors() is not valid");
     };
+    void backpropagate(int thread_id) override;
+
+    void before_batch(int thread_id) override;
 
     // layer functions
     std::vector<std::vector<double>> get_weights() override;
@@ -110,6 +117,8 @@ class DropoutLayer : public Layer {
 
    private:
     double dropout_chance;
+
+    std::vector<std::vector<bool>> dropout_mask;
 };
 
 double randn();
