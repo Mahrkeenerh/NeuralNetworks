@@ -149,7 +149,7 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
                     progress = (int)((double)(batch + 1) / (train_size / minibatch_size) * 50);
                     train_acc = (double)correct / (i + 1);
                     padding = std::to_string(train_size / minibatch_size).length() -
-                              std::to_string(minibatch_size + 1).length() + 1;
+                              std::to_string(batch + 1).length() + 1;
                     epoch_eta = (double)(omp_get_wtime() - epoch_start) / (i + 1) * (train_size - i - 1);
 
                     std::cout << "\033[F" << std::string(padding, ' ') << batch + 1 << "/"
