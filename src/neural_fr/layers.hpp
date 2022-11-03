@@ -112,41 +112,6 @@ class DropoutLayer : public Layer {
     double dropout_chance;
 };
 
-class SoftmaxLayer : public Layer {
-   public:
-    SoftmaxLayer(int width);
-    void setup(Layer* previous, Layer* next, int max_threads) override;
-
-    // std::vector<std::vector<double>> momentum;
-    // std::vector<std::vector<double>> variance;
-    // double beta1, beta2, eta, epsilon;
-    double beta1;
-
-    std::vector<std::vector<double>> weights;
-    std::vector<std::vector<double>> weight_delta;
-
-    std::vector<std::vector<double>> outputs;
-    std::vector<std::vector<double>> gradients;
-    std::vector<std::vector<double>> updates;
-
-    // network functions
-    std::vector<double> predict(int thread_id) override;
-    void out_errors(int thread_id, std::vector<double> target_vector) override;
-    void backpropagate(int thread_id) override {
-        throw std::runtime_error("SoftmaxLayer::backpropagate() is not valid");
-    }
-    void calculate_updates(int thread_id, double learning_rate) override;
-    void apply_updates(int minibatch_size) override;
-    void clear_updates() override;
-
-    // layer functions
-    std::vector<std::vector<double>> get_weights() override;
-    std::vector<double> get_outputs(std::vector<int> loc) override;
-    std::vector<double> get_gradients(std::vector<int> loc) override;
-
-   private:
-};
-
 double randn();
 
 double sigmoid(double x);
