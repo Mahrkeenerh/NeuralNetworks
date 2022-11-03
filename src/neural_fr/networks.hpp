@@ -8,9 +8,9 @@
 
 class DenseNetwork {
    public:
-    DenseNetwork(std::vector<Layer*> layers);
+    DenseNetwork(std::vector<layers::Layer*> layers);
 
-    DenseNetwork add_layer(Layer* layer);
+    DenseNetwork add_layer(layers::Layer* layer);
 
     std::vector<double> predict(std::vector<double> input, int thread_id = 0);
 
@@ -21,7 +21,7 @@ class DenseNetwork {
 
    private:
     int size = 0;
-    std::vector<Layer*> layers;
+    std::vector<layers::Layer*> layers;
 
     void forwardpropagate(std::vector<double> input, int thread_id);
     void backpropagate(int thread_id, std::vector<double> target_vector);

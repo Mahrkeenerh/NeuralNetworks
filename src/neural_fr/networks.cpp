@@ -6,7 +6,7 @@
 #include <iostream>
 #include <numeric>
 
-DenseNetwork::DenseNetwork(std::vector<Layer*> layers) {
+DenseNetwork::DenseNetwork(std::vector<layers::Layer*> layers) {
     this->layers = layers;
     this->size = layers.size();
 
@@ -153,7 +153,7 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
                 }
 
                 this->forwardpropagate(data[train_i[i]], thread_id);
-                std::vector<double> target_vector(this->layers[this->size - 1]->output_size, 0);
+                std::vector<double> target_vector(this->layers[this->size - 1]->output_shape[0], 0);
                 target_vector[labels[train_i[i]]] = 1;
 
 #pragma omp critical
