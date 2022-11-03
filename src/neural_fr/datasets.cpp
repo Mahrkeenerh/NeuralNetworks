@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-Dataset1D::Dataset1D(int train_size, int test_size, bool normalize) {
+Dataset1D::Dataset1D(int train_size, int test_size, bool normalize, double noise) {
     this->train_size = train_size;
     this->test_size = test_size;
 
@@ -24,9 +24,14 @@ Dataset1D::Dataset1D(int train_size, int test_size, bool normalize) {
         this->test_size = 10000;
     }
 
-    load_data();
+    this->load_data();
+
     if (normalize) {
-        normalize_data();
+        this->normalize_data();
+    }
+
+    if (noise != -1) {
+        this->noise_data(noise);
     }
 }
 
@@ -86,6 +91,27 @@ void Dataset1D::load_data() {
     for (int i = 0; i < this->test_size; i++) {
         std::getline(test_labels_file, line);
         this->test_labels[i] = std::stoi(line);
+    }
+}
+
+// Ugly and duplicate, but it works a little
+void Dataset1D::noise_data(double noise_strength) {
+    // Add gaussian noise to training data
+    for (int i = 0; i < this->train_size; i++) {
+        for (int j = 0; j < 784; j++) {
+            double u1 = rand() / (double)RAND_MAX;
+            double u2 = rand() / (double)RAND_MAX;
+            double noise = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+
+            // Avoid infinite values
+            while (noise == INFINITY || noise == -INFINITY) {
+                u1 = rand() / (double)RAND_MAX;
+                u2 = rand() / (double)RAND_MAX;
+                noise = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+            }
+
+            this->train_data[i][j] += noise * noise_strength;
+        }
     }
 }
 

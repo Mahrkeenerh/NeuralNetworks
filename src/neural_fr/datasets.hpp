@@ -10,11 +10,12 @@ class Dataset1D {
 
     int train_size, test_size;
 
-    Dataset1D(int train_size = -1, int test_size = -1, bool normalize = true);
+    Dataset1D(int train_size = -1, int test_size = -1, bool normalize = true, double noise = -1);
 
    private:
     void load_data();
     void normalize_data();
+    void noise_data(double noise_strength);
 };
 
 #endif
