@@ -351,10 +351,8 @@ void layers::Conv2D::predict(int thread_id) {
 
     // 6 nested loops, duplicated for performance
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
-        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
-            for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
-                this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y] = this->weights[n_i][0];
-            }
+        for (int p_i = 0; p_i < this->output_shape[0] * this->output_shape[1]; p_i++) {
+            this->outputs[thread_id][n_i][p_i] = this->weights[n_i][0];
         }
 
         for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
@@ -374,11 +372,10 @@ void layers::Conv2D::predict(int thread_id) {
             }
         }
 
-        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
-            for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
-                this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y] =
-                    this->activation(this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y]);
-            }
+        for (int p_i = 0; p_i < this->output_shape[0] * this->output_shape[1]; p_i++) {
+            this->outputs[thread_id][n_i][p_i] /=
+                this->previous->output_shape[2] * this->kernel_size * this->kernel_size;
+            this->outputs[thread_id][n_i][p_i] = this->activation(this->outputs[thread_id][n_i][p_i]);
         }
     }
 }
@@ -387,19 +384,6 @@ void layers::Conv2D::backpropagate(int thread_id) {
     std::vector<std::vector<double>> new_gradients = std::vector<std::vector<double>>(
         this->previous->output_shape[2],
         std::vector<double>(this->previous->output_shape[0] * this->previous->output_shape[1], 0.0));
-
-    // for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
-    //     for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
-    //         for (int k_y = 0; k_y < this->kernel_size; k_y++) {
-    //             for (int k_x = 0; k_x < this->kernel_size; k_x++) {
-    //                 new_gradients[d_i][p_i] +=
-    //                     this->gradients[thread_id][n_i][p_i] *
-    //                     this->weights[n_i][d_i * this->kernel_size * this->kernel_size +
-    //                                        k_x * this->kernel_size + k_y + 1];
-    //             }
-    //         }
-    //     }
-    // }
 
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
         for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
@@ -425,27 +409,6 @@ void layers::Conv2D::backpropagate(int thread_id) {
 
 void layers::Conv2D::calculate_updates(int thread_id, double learning_rate) {
     std::vector<std::vector<double>> prev_output = this->previous->get_outputs_2d(thread_id);
-
-    // for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
-    //     this->updates[n_i][0] += this->gradients[thread_id][n_i][0] * learning_rate +
-    //                              this->beta1 * this->weight_delta[n_i][0];
-
-    //     for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
-    //         for (int k_x = 0; k_x < this->kernel_size; k_x++) {
-    //             for (int k_y = 0; k_y < this->kernel_size; k_y++) {
-    //                 this->updates[n_i][d_i * this->kernel_size * this->kernel_size +
-    //                                    k_x * this->kernel_size + k_y + 1] +=
-    //                     this->gradients[thread_id][n_i][0] *
-    //                         prev_output[d_i][(k_x * this->stride) * this->previous->output_shape[1] +
-    //                                          k_y * this->stride] *
-    //                         learning_rate +
-    //                     this->beta1 *
-    //                         this->weight_delta[n_i][d_i * this->kernel_size * this->kernel_size +
-    //                                                 k_x * this->kernel_size + k_y + 1];
-    //             }
-    //         }
-    //     }
-    // }
 
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
         for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
@@ -527,8 +490,8 @@ void layers::Flatten2D::predict(int thread_id) {
         for (int p_y = 0; p_y < this->previous->output_shape[1]; p_y++) {
             for (int p_x = 0; p_x < this->previous->output_shape[0]; p_x++) {
                 this->outputs[thread_id]
-                             [p_x * this->previous->output_shape[1] * this->previous->output_shape[2] +
-                              p_y * this->previous->output_shape[2] + d_i] =
+                             [d_i * this->previous->output_shape[1] * this->previous->output_shape[0] +
+                              p_x * this->previous->output_shape[1] + p_y] =
                     prev_output[d_i][p_x * this->previous->output_shape[1] + p_y];
             }
         }

@@ -12,10 +12,9 @@
 
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
-    // DenseNetwork network({new layers::Input(784), new layers::Dense(128, layers::leaky_relu),
-    //                       new layers::Dense(10, layers::softmax)});
     DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
-                          new layers::Flatten2D(), new layers::Dense(10, layers::softmax)});
+                          new layers::Flatten2D(), new layers::Dense(32, layers::leaky_relu),
+                          new layers::Dense(10, layers::softmax)});
 
     network.fit(dataset, 0.01, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 
@@ -48,6 +47,13 @@ int main(int argc, char *argv[]) {
     }
     if (argc > 2) {
         minibatch_size = std::stoi(argv[2]);
+    }
+    if (argc > 3) {
+        learning_rate_start = std::stod(argv[3]);
+        learning_rate_end = learning_rate_start / 10;
+    }
+    if (argc > 4) {
+        learning_rate_end = std::stod(argv[4]);
     }
 
     // Redirect cout to file
