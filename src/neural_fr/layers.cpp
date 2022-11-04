@@ -163,7 +163,7 @@ void layers::Dense::calculate_updates(int thread_id, double learning_rate) {
         this->gradients[thread_id][n_i] *= this->derivative(this->outputs[thread_id][n_i]);
 
         this->updates[n_i][0] +=
-            this->gradients[thread_id][n_i] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+            this->gradients[thread_id][0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
 
         for (int w_i = 1; w_i < this->previous->output_shape[0] + 1; w_i++) {
             this->updates[n_i][w_i] +=
@@ -454,9 +454,8 @@ void layers::Conv2D::calculate_updates(int thread_id, double learning_rate) {
                 this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y] *=
                     this->derivative(this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y]);
 
-                this->updates[n_i][0] +=
-                    this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y] * learning_rate +
-                    this->beta1 * this->weight_delta[n_i][0];
+                this->updates[n_i][0] += this->gradients[thread_id][n_i][0] * learning_rate +
+                                         this->beta1 * this->weight_delta[n_i][0];
 
                 for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
                     for (int k_x = 0; k_x < this->kernel_size; k_x++) {
