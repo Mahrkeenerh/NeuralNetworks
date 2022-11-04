@@ -32,9 +32,8 @@ class Layer {
     virtual void before_batch(int thread_id) {}
 
     // layer functions
-    virtual std::vector<std::vector<double>> get_weights() { return {}; }
     virtual std::vector<double> get_outputs(std::vector<int> loc) { return std::vector<double>(); }
-    virtual std::vector<double> get_gradients(std::vector<int> loc) { return std::vector<double>(); }
+    virtual void set_gradients(std::vector<double> gradients, std::vector<int> loc) {}
 
    protected:
     Layer *previous, *next;
@@ -72,9 +71,8 @@ class Dense : public Layer {
     void clear_updates() override;
 
     // layer functions
-    std::vector<std::vector<double>> get_weights() override;
     std::vector<double> get_outputs(std::vector<int> loc) override;
-    std::vector<double> get_gradients(std::vector<int> loc) override;
+    void set_gradients(std::vector<double> gradients, std::vector<int> loc) override;
 
    private:
     double beta1;
@@ -106,9 +104,8 @@ class Dropout : public Layer {
     void before_batch(int thread_id) override;
 
     // layer functions
-    std::vector<std::vector<double>> get_weights() override;
     std::vector<double> get_outputs(std::vector<int> loc) override;
-    std::vector<double> get_gradients(std::vector<int> loc) override;
+    void set_gradients(std::vector<double> gradients, std::vector<int> loc) override;
 
    private:
     double dropout_chance;

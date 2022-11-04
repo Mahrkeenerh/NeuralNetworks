@@ -131,25 +131,24 @@ void layers::Dense::out_errors(int thread_id, std::vector<double> target_vector)
 }
 
 void layers::Dense::backpropagate(int thread_id) {
-    std::vector<double> next_gradients = this->next->get_gradients({thread_id});
-    std::vector<std::vector<double>> next_weights = this->next->get_weights();
+    std::vector<double> new_gradients(this->previous->output_shape[0], 0.0);
 
-    for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
-        this->gradients[thread_id][n_i] = 0;
-
-        for (int o_i = 0; o_i < this->next->output_shape[0]; o_i++) {
-            this->gradients[thread_id][n_i] += next_gradients[o_i] * next_weights[o_i][n_i + 1];
+    for (int n_i = 0; n_i < this->previous->output_shape[0]; n_i++) {
+        for (int o_i = 0; o_i < this->output_shape[0]; o_i++) {
+            new_gradients[n_i] += this->gradients[thread_id][o_i] * this->weights[o_i][n_i + 1];
         }
     }
+
+    this->previous->set_gradients(new_gradients, {thread_id});
+}
+
+void layers::Dense::calculate_updates(int thread_id, double learning_rate) {
+    std::vector<double> prev_output = this->previous->get_outputs({thread_id});
 
     // Apply activation function
     for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
         this->gradients[thread_id][n_i] *= this->derivative(this->outputs[thread_id][n_i]);
     }
-}
-
-void layers::Dense::calculate_updates(int thread_id, double learning_rate) {
-    std::vector<double> prev_output = this->previous->get_outputs({thread_id});
 
     double update;
     for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
@@ -210,12 +209,10 @@ void layers::Dense::clear_updates() {
     }
 }
 
-std::vector<std::vector<double>> layers::Dense::get_weights() { return this->weights; }
-
 std::vector<double> layers::Dense::get_outputs(std::vector<int> loc) { return this->outputs[loc[0]]; }
 
-std::vector<double> layers::Dense::get_gradients(std::vector<int> loc) {
-    return this->gradients[loc[0]];
+void layers::Dense::set_gradients(std::vector<double> gradients, std::vector<int> loc) {
+    this->gradients[loc[0]] = gradients;
 }
 
 // DROPOUT LAYER
@@ -256,18 +253,11 @@ void layers::Dropout::forwardpropagate(int thread_id) {
 };
 
 void layers::Dropout::backpropagate(int thread_id) {
-    std::vector<double> next_gradients = this->next->get_gradients({thread_id});
-    std::vector<std::vector<double>> next_weights = this->next->get_weights();
-
     for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
-        this->gradients[thread_id][n_i] = 0;
-
-        for (int o_i = 0; o_i < this->next->output_shape[0]; o_i++) {
-            this->gradients[thread_id][n_i] += next_gradients[o_i] * next_weights[o_i][n_i + 1];
-        }
-
         this->gradients[thread_id][n_i] *= this->dropout_mask[thread_id][n_i];
     }
+
+    this->previous->set_gradients(this->gradients[thread_id], {thread_id});
 }
 
 void layers::Dropout::before_batch(int thread_id) {
@@ -280,12 +270,10 @@ void layers::Dropout::before_batch(int thread_id) {
     }
 }
 
-std::vector<std::vector<double>> layers::Dropout::get_weights() { return this->weights; }
-
 std::vector<double> layers::Dropout::get_outputs(std::vector<int> loc) { return this->outputs[loc[0]]; }
 
-std::vector<double> layers::Dropout::get_gradients(std::vector<int> loc) {
-    return this->gradients[loc[0]];
+void layers::Dropout::set_gradients(std::vector<double> gradients, std::vector<int> loc) {
+    this->gradients[loc[0]] = gradients;
 }
 
 // Random value from normal distribution using Box-Muller transform

@@ -42,7 +42,7 @@ void DenseNetwork::forwardpropagate(std::vector<double> input, int thread_id) {
 void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vector) {
     this->layers[this->size - 1]->out_errors(thread_id, target_vector);
 
-    for (int l_i = this->size - 2; l_i >= 1; l_i--) {
+    for (int l_i = this->size - 1; l_i >= 2; l_i--) {
         this->layers[l_i]->backpropagate(thread_id);
     }
 }
