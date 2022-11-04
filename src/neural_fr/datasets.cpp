@@ -120,9 +120,9 @@ void Dataset1D::normalize_data() {
     std::vector<double> mean_vector(this->train_data[0].size(), 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < this->train_data[0].size(); i++) {
+    for (int i = 0; i < (int)this->train_data[0].size(); i++) {
         double sum = 0;
-        for (int j = 0; j < this->train_data.size(); j++) {
+        for (int j = 0; j < (int)this->train_data.size(); j++) {
             sum += this->train_data[j][i];
         }
 
@@ -133,10 +133,10 @@ void Dataset1D::normalize_data() {
     std::vector<double> std_vector(this->train_data[0].size(), 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < this->train_data[0].size(); i++) {
+    for (int i = 0; i < (int)this->train_data[0].size(); i++) {
         double sum = 0;
-        for (int j = 0; j < this->train_data.size(); j++) {
-            sum += pow(this->train_data[j][i] - mean_vector[i], 2);
+        for (int j = 0; j < (int)this->train_data.size(); j++) {
+            sum += (this->train_data[j][i] - mean_vector[i]) * (this->train_data[j][i] - mean_vector[i]);
         }
 
         std_vector[i] = sqrt(sum / this->train_data.size());
@@ -144,16 +144,16 @@ void Dataset1D::normalize_data() {
 
     // Normalize training data
 #pragma omp parallel for
-    for (int i = 0; i < this->train_data.size(); i++) {
-        for (int j = 0; j < this->train_data[i].size(); j++) {
+    for (int i = 0; i < (int)this->train_data.size(); i++) {
+        for (int j = 0; j < (int)this->train_data[i].size(); j++) {
             this->train_data[i][j] = (this->train_data[i][j] - mean_vector[j]) / std_vector[j];
         }
     }
 
     // Normalize test data
 #pragma omp parallel for
-    for (int i = 0; i < this->test_data.size(); i++) {
-        for (int j = 0; j < this->test_data[i].size(); j++) {
+    for (int i = 0; i < (int)this->test_data.size(); i++) {
+        for (int j = 0; j < (int)this->test_data[i].size(); j++) {
             this->test_data[i][j] = (this->test_data[i][j] - mean_vector[j]) / std_vector[j];
         }
     }

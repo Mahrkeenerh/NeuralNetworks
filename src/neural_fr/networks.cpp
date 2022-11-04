@@ -22,7 +22,7 @@ DenseNetwork::DenseNetwork(std::vector<layers::Layer*> layers) {
 }
 
 std::vector<double> DenseNetwork::predict(std::vector<double> input, int thread_id) {
-    this->layers[0]->predict(input, thread_id);
+    this->layers[0]->predict(thread_id, input);
 
     for (int i = 1; i < this->size; i++) {
         this->layers[i]->predict(thread_id);
@@ -126,9 +126,9 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
 
         learning_rate = learning_rate_start;
         if (epochs > 1) {
-            learning_rate =
-                (1 - pow((double)epoch / (epochs - 1), 2)) * (learning_rate_start - learning_rate_end) +
-                learning_rate_end;
+            learning_rate = (1 - ((double)epoch / (epochs - 1)) * ((double)epoch / (epochs - 1))) *
+                                (learning_rate_start - learning_rate_end) +
+                            learning_rate_end;
         }
 
         for (int batch = 0; batch < (train_size / minibatch_size); batch++) {
@@ -168,8 +168,8 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
 
                 this->backpropagate(thread_id, target_vector);
 
-                // NOT THREAD SAFE, BUT WORKS JUST FINE ANYWAY
-                // #pragma omp critical
+                // // NOT THREAD SAFE, BUT WORKS JUST FINE ANYWAY
+                // // #pragma omp critical
                 { this->calculate_updates(thread_id, learning_rate); }
             }
 
@@ -200,12 +200,12 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
     std::vector<int> correct = std::vector(omp_get_max_threads(), 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < inputs.size(); i++) {
+    for (int i = 0; i < (int)inputs.size(); i++) {
         int thread_id = omp_get_thread_num();
         std::vector<double> outputs = this->predict(inputs[i], thread_id);
         int max_index = 0;
 
-        for (int j = 0; j < outputs.size(); j++) {
+        for (int j = 0; j < (int)outputs.size(); j++) {
             if (outputs[j] > outputs[max_index]) {
                 max_index = j;
             }
@@ -224,12 +224,12 @@ double DenseNetwork::valid_accuracy(std::vector<std::vector<double>> inputs, std
     std::vector<int> correct = std::vector(omp_get_max_threads(), 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < valid_i.size(); i++) {
+    for (int i = 0; i < (int)valid_i.size(); i++) {
         int thread_id = omp_get_thread_num();
         std::vector<double> outputs = this->predict(inputs[valid_i[i]], thread_id);
         int max_index = 0;
 
-        for (int j = 0; j < outputs.size(); j++) {
+        for (int j = 0; j < (int)outputs.size(); j++) {
             if (outputs[j] > outputs[max_index]) {
                 max_index = j;
             }
