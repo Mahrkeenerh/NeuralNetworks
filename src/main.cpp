@@ -12,8 +12,9 @@
 
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
     Dataset1D dataset;
-    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
-                          new layers::Flatten2D(), new layers::Dense(32, layers::leaky_relu),
+    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(64, 3, 1, layers::leaky_relu),
+                          new layers::MaxPool2D(2, 2), new layers::Flatten2D(),
+                          new layers::Dropout(0.25), new layers::Dense(32, layers::leaky_relu),
                           new layers::Dense(10, layers::softmax)});
 
     network.fit(dataset, 0.01, epochs, minibatch_size, learning_rate_start, learning_rate_end);

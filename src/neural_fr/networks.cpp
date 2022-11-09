@@ -158,7 +158,7 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
 
 #pragma omp critical
                 {
-                    std::vector<double> output = this->layers[this->size - 1]->get_outputs({thread_id});
+                    std::vector<double> output = this->layers[this->size - 1]->get_outputs(thread_id);
                     // Add if correct
                     if (std::distance(output.begin(), std::max_element(output.begin(), output.end())) ==
                         labels[train_i[i]]) {

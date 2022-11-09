@@ -1,6 +1,7 @@
 #ifndef layers_hpp
 #define layers_hpp
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -147,6 +148,28 @@ class Conv2D : public Layer {
 
     std::vector<std::vector<std::vector<double>>> outputs;
     std::vector<std::vector<std::vector<double>>> gradients;
+};
+
+class MaxPool2D : public Layer {
+   public:
+    MaxPool2D(int kernel_size, int stride);
+    void setup(Layer* previous, Layer* next, int max_threads) override;
+
+    // network functions
+    void predict(int thread_id) override;
+    void backpropagate(int thread_id) override;
+
+    // layer functions
+    std::vector<std::vector<double>> get_outputs_2d(int thread_id) override;
+    void set_gradients_2d(int thread_id, std::vector<std::vector<double>> gradients) override;
+
+   private:
+    int kernel_size, stride;
+
+    std::vector<std::vector<std::vector<double>>> outputs;
+    std::vector<std::vector<std::vector<double>>> gradients;
+
+    std::vector<std::vector<std::vector<int>>> max_indices;
 };
 
 class Flatten2D : public Layer {

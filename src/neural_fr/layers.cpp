@@ -115,10 +115,20 @@ void layers::Dense::predict(int thread_id) {
         }
     }
 
-    double sum = 0;
+    double max = 0.0;
+
+    if (this->activation == softmax) {
+        max = *std::max_element(this->outputs[thread_id].begin(), this->outputs[thread_id].end());
+    }
+
+    double sum = 0.0;
 
     // Apply activation function
     for (int i = 0; i < this->output_shape[0]; i++) {
+        if (this->activation == softmax) {
+            this->outputs[thread_id][i] -= max;
+        }
+
         this->outputs[thread_id][i] = this->activation(this->outputs[thread_id][i]);
         sum += this->outputs[thread_id][i];
     }
@@ -164,7 +174,9 @@ void layers::Dense::calculate_updates(int thread_id, double learning_rate) {
 
         this->updates[n_i][0] +=
             this->gradients[thread_id][0] * learning_rate + this->beta1 * this->weight_delta[n_i][0];
+    }
 
+    for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
         for (int w_i = 1; w_i < this->previous->output_shape[0] + 1; w_i++) {
             this->updates[n_i][w_i] +=
                 this->gradients[thread_id][n_i] * learning_rate * prev_output[w_i - 1] +
@@ -317,6 +329,9 @@ void layers::Conv2D::setup(layers::Layer* previous, layers::Layer* next, int thr
         thread_count, std::vector<std::vector<double>>(
                           this->output_shape[2],
                           std::vector<double>(this->output_shape[0] * this->output_shape[1], 0.0)));
+    // this->gradients =
+    //     std::vector<std::vector<double>>(thread_count, std::vector<double>(this->output_shape[2],
+    //     0.0));
     this->updates = std::vector<std::vector<double>>(
         this->output_shape[2],
         std::vector<double>(this->kernel_size * this->kernel_size * this->previous->output_shape[2] + 1,
@@ -349,9 +364,11 @@ void layers::Conv2D::setup(layers::Layer* previous, layers::Layer* next, int thr
 void layers::Conv2D::predict(int thread_id) {
     std::vector<std::vector<double>> prev_output = this->previous->get_outputs_2d(thread_id);
 
+    int p_size = this->output_shape[0] * this->output_shape[1];
+
     // 6 nested loops, duplicated for performance
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
-        for (int p_i = 0; p_i < this->output_shape[0] * this->output_shape[1]; p_i++) {
+        for (int p_i = 0; p_i < p_size; p_i++) {
             this->outputs[thread_id][n_i][p_i] = this->weights[n_i][0];
         }
 
@@ -372,14 +389,13 @@ void layers::Conv2D::predict(int thread_id) {
             }
         }
 
-        for (int p_i = 0; p_i < this->output_shape[0] * this->output_shape[1]; p_i++) {
-            this->outputs[thread_id][n_i][p_i] /=
-                this->previous->output_shape[2] * this->kernel_size * this->kernel_size;
+        for (int p_i = 0; p_i < p_size; p_i++) {
             this->outputs[thread_id][n_i][p_i] = this->activation(this->outputs[thread_id][n_i][p_i]);
         }
     }
 }
 
+// Most likely doesn't work
 void layers::Conv2D::backpropagate(int thread_id) {
     std::vector<std::vector<double>> new_gradients = std::vector<std::vector<double>>(
         this->previous->output_shape[2],
@@ -389,8 +405,8 @@ void layers::Conv2D::backpropagate(int thread_id) {
         for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
             for (int k_y = 0; k_y < this->kernel_size; k_y++) {
                 for (int k_x = 0; k_x < this->kernel_size; k_x++) {
-                    for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
-                        for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
+                    for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
+                        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
                             new_gradients[d_i]
                                          [(p_x * this->stride + k_x) * this->previous->output_shape[1] +
                                           p_y * this->stride + k_y] +=
@@ -410,34 +426,36 @@ void layers::Conv2D::backpropagate(int thread_id) {
 void layers::Conv2D::calculate_updates(int thread_id, double learning_rate) {
     std::vector<std::vector<double>> prev_output = this->previous->get_outputs_2d(thread_id);
 
+    int p_size = this->output_shape[0] * this->output_shape[1];
+
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
-        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
-            for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
-                // Apply derivative
-                this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y] *=
-                    this->derivative(this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y]);
+        for (int p_i = 0; p_i < p_size; p_i++) {
+            // Apply derivative
+            this->gradients[thread_id][n_i][p_i] *= this->derivative(this->outputs[thread_id][n_i][p_i]);
+        }
+    }
 
-                this->updates[n_i][0] +=
-                    this->gradients[thread_id][n_i][0] * learning_rate +
-                    this->beta1 * this->weight_delta[n_i][0] /
-                        (this->previous->output_shape[2] * this->kernel_size * this->kernel_size);
+    for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
+        for (int p_i = 0; p_i < p_size; p_i++) {
+            this->updates[n_i][0] += this->gradients[thread_id][0][p_i] * learning_rate +
+                                     this->beta1 * this->weight_delta[n_i][0];
+        }
 
-                for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
-                    for (int k_x = 0; k_x < this->kernel_size; k_x++) {
-                        for (int k_y = 0; k_y < this->kernel_size; k_y++) {
+        for (int d_i = 0; d_i < this->previous->output_shape[2]; d_i++) {
+            for (int k_y = 0; k_y < this->kernel_size; k_y++) {
+                for (int k_x = 0; k_x < this->kernel_size; k_x++) {
+                    for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
+                        for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
                             this->updates[n_i][d_i * this->kernel_size * this->kernel_size +
                                                k_x * this->kernel_size + k_y + 1] +=
-                                (this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y] *
-                                     prev_output[d_i][(p_x * this->stride + k_x) *
-                                                          this->previous->output_shape[1] +
-                                                      p_y * this->stride + k_y] *
-                                     learning_rate +
-                                 this->beta1 *
-                                     this->weight_delta[n_i]
-                                                       [d_i * this->kernel_size * this->kernel_size +
-                                                        k_x * this->kernel_size + k_y + 1]) /
-                                (this->previous->output_shape[2] * this->kernel_size *
-                                 this->kernel_size);
+                                this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y] *
+                                    learning_rate *
+                                    prev_output[d_i][(p_x * this->stride + k_x) *
+                                                         this->previous->output_shape[1] +
+                                                     p_y * this->stride + k_y] +
+                                this->beta1 *
+                                    this->weight_delta[n_i][d_i * this->kernel_size * this->kernel_size +
+                                                            k_x * this->kernel_size + k_y + 1];
                         }
                     }
                 }
@@ -447,11 +465,13 @@ void layers::Conv2D::calculate_updates(int thread_id, double learning_rate) {
 }
 
 void layers::Conv2D::apply_updates(int minibatch_size) {
+    int w_size = this->kernel_size * this->kernel_size * this->previous->output_shape[2];
+    int p_size = this->output_shape[0] * this->output_shape[1];
+
     for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
-        for (int w_i = 0;
-             w_i < this->kernel_size * this->kernel_size * this->previous->output_shape[2] + 1; w_i++) {
-            this->weights[n_i][w_i] -= this->updates[n_i][w_i];
-            this->weight_delta[n_i][w_i] = updates[n_i][w_i] / minibatch_size;
+        for (int w_i = 0; w_i < w_size + 1; w_i++) {
+            this->weights[n_i][w_i] -= this->updates[n_i][w_i] / p_size;
+            this->weight_delta[n_i][w_i] = updates[n_i][w_i] / minibatch_size / p_size;
         }
     }
 }
@@ -470,6 +490,97 @@ std::vector<std::vector<double>> layers::Conv2D::get_outputs_2d(int thread_id) {
 }
 
 void layers::Conv2D::set_gradients_2d(int thread_id, std::vector<std::vector<double>> gradients) {
+    this->gradients[thread_id] = gradients;
+}
+
+// MAXPOOL2D LAYER
+layers::MaxPool2D::MaxPool2D(int kernel_size, int stride) {
+    this->kernel_size = kernel_size;
+    this->stride = stride;
+}
+
+void layers::MaxPool2D::setup(layers::Layer* previous, layers::Layer* next, int thread_count) {
+    this->previous = previous;
+    this->next = next;
+
+    this->output_shape = std::vector<int>({this->previous->output_shape[0] / this->stride,
+                                           this->previous->output_shape[1] / this->stride,
+                                           this->previous->output_shape[2]});
+
+    this->outputs = std::vector<std::vector<std::vector<double>>>(
+        thread_count, std::vector<std::vector<double>>(
+                          this->output_shape[2],
+                          std::vector<double>(this->output_shape[0] * this->output_shape[1], 0.0)));
+
+    this->gradients = std::vector<std::vector<std::vector<double>>>(
+        thread_count, std::vector<std::vector<double>>(
+                          this->previous->output_shape[2],
+                          std::vector<double>(
+                              this->previous->output_shape[0] * this->previous->output_shape[1], 0.0)));
+
+    this->max_indices = std::vector<std::vector<std::vector<int>>>(
+        thread_count,
+        std::vector<std::vector<int>>(
+            this->output_shape[2], std::vector<int>(this->output_shape[0] * this->output_shape[1], 0)));
+}
+
+void layers::MaxPool2D::predict(int thread_id) {
+    std::vector<std::vector<double>> prev_output = this->previous->get_outputs_2d(thread_id);
+
+    double max, value;
+    int max_index;
+
+    for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
+        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
+            for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
+                max = prev_output[n_i][p_x * this->stride * this->previous->output_shape[1] +
+                                       p_y * this->stride];
+                max_index = 0;
+
+                for (int k_x = 0; k_x < this->kernel_size; k_x++) {
+                    for (int k_y = 0; k_y < this->kernel_size; k_y++) {
+                        value = prev_output[n_i][(p_x * this->stride + k_x) *
+                                                     this->previous->output_shape[1] +
+                                                 p_y * this->stride + k_y];
+
+                        if (value > max) {
+                            max = value;
+                            max_index = (p_x * this->stride + k_x) * this->previous->output_shape[1] +
+                                        p_y * this->stride + k_y;
+                        }
+                    }
+                }
+
+                this->outputs[thread_id][n_i][p_x * this->output_shape[1] + p_y] = max;
+                this->max_indices[thread_id][n_i][p_x * this->output_shape[1] + p_y] = max_index;
+            }
+        }
+    }
+}
+
+void layers::MaxPool2D::backpropagate(int thread_id) {
+    std::vector<std::vector<double>> new_gradients = std::vector<std::vector<double>>(
+        this->previous->output_shape[2],
+        std::vector<double>(this->previous->output_shape[0] * this->previous->output_shape[1], 0.0));
+
+    for (int n_i = 0; n_i < this->output_shape[2]; n_i++) {
+        for (int p_y = 0; p_y < this->output_shape[1]; p_y++) {
+            for (int p_x = 0; p_x < this->output_shape[0]; p_x++) {
+                new_gradients[n_i]
+                             [this->max_indices[thread_id][n_i][p_x * this->output_shape[1] + p_y]] +=
+                    this->gradients[thread_id][n_i][p_x * this->output_shape[1] + p_y];
+            }
+        }
+    }
+
+    this->previous->set_gradients_2d(thread_id, new_gradients);
+}
+
+std::vector<std::vector<double>> layers::MaxPool2D::get_outputs_2d(int thread_id) {
+    return this->outputs[thread_id];
+}
+
+void layers::MaxPool2D::set_gradients_2d(int thread_id, std::vector<std::vector<double>> gradients) {
     this->gradients[thread_id] = gradients;
 }
 
@@ -504,17 +615,20 @@ void layers::Flatten2D::predict(int thread_id) {
 }
 
 void layers::Flatten2D::backpropagate(int thread_id) {
-    std::vector<double> new_gradients = std::vector<double>(this->previous->output_shape[2], 0.0);
-
-    double xy_size = this->previous->output_shape[0] * this->previous->output_shape[1];
+    std::vector<std::vector<double>> new_gradients = std::vector<std::vector<double>>(
+        this->previous->output_shape[2],
+        std::vector<double>(this->previous->output_shape[0] * this->previous->output_shape[1], 0.0));
 
     for (int n_i = 0; n_i < this->previous->output_shape[2]; n_i++) {
-        for (int p_i = 0; p_i < xy_size; p_i++) {
-            new_gradients[n_i] += this->gradients[thread_id][n_i * xy_size + p_i];
+        for (int p_i = 0; p_i < this->previous->output_shape[0] * this->previous->output_shape[1];
+             p_i++) {
+            new_gradients[n_i][p_i] = this->gradients[thread_id][n_i * this->previous->output_shape[0] *
+                                                                     this->previous->output_shape[1] +
+                                                                 p_i];
         }
     }
 
-    this->previous->set_gradients(thread_id, new_gradients);
+    this->previous->set_gradients_2d(thread_id, new_gradients);
 }
 
 std::vector<double> layers::Flatten2D::get_outputs(int thread_id) { return {this->outputs[thread_id]}; }
