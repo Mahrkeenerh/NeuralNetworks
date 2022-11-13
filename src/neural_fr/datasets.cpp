@@ -4,25 +4,19 @@
 #include <fstream>
 #include <sstream>
 
-Dataset1D::Dataset1D(int train_size, int test_size, bool normalize, double noise) {
-    this->train_size = train_size;
-    this->test_size = test_size;
+Dataset1D::Dataset1D(double val_split, bool normalize, double noise) {
+    this->train_size = 60000 * (1 - val_split);
+    this->valid_size = 60000 * val_split;
+    this->test_size = 10000;
 
-    // Set sizes
-    if (train_size == -1) {
-        this->train_size = 60000;
-    }
-    if (test_size == -1) {
-        this->test_size = 10000;
-    }
+    this->train_data = std::vector<std::vector<double>>(this->train_size);
+    this->train_labels = std::vector<int>(this->train_size);
 
-    // Validate sizes
-    if (train_size > 60000 || train_size < 0) {
-        this->train_size = 60000;
-    }
-    if (test_size > 10000 || test_size < 0) {
-        this->test_size = 10000;
-    }
+    this->valid_data = std::vector<std::vector<double>>(this->valid_size);
+    this->valid_labels = std::vector<int>(this->valid_size);
+
+    this->test_data = std::vector<std::vector<double>>(this->test_size);
+    this->test_labels = std::vector<int>(this->test_size);
 
     this->load_data();
 
@@ -41,7 +35,6 @@ void Dataset1D::load_data() {
     std::string cell;
     int j;
 
-    this->train_data.resize(this->train_size);
     std::ifstream train_data_file("data/fashion_mnist_train_vectors.csv");
 
     // Load training data
@@ -58,7 +51,19 @@ void Dataset1D::load_data() {
         this->train_data[i] = row;
     }
 
-    this->train_labels.resize(this->train_size);
+    for (int i = 0; i < this->valid_size; i++) {
+        std::getline(train_data_file, line);
+        std::stringstream line_stream(line);
+
+        j = 0;
+
+        while (std::getline(line_stream, cell, ',')) {
+            row[j++] = std::stof(cell) / 255;
+        }
+
+        this->valid_data[i] = row;
+    }
+
     std::ifstream train_labels_file("data/fashion_mnist_train_labels.csv");
 
     // Load training labels
@@ -67,7 +72,11 @@ void Dataset1D::load_data() {
         this->train_labels[i] = std::stoi(line);
     }
 
-    this->test_data.resize(this->test_size);
+    for (int i = 0; i < this->valid_size; i++) {
+        std::getline(train_labels_file, line);
+        this->valid_labels[i] = std::stoi(line);
+    }
+
     std::ifstream test_data_file("data/fashion_mnist_test_vectors.csv");
 
     // Load test data
@@ -84,7 +93,6 @@ void Dataset1D::load_data() {
         this->test_data[i] = row;
     }
 
-    this->test_labels.resize(this->test_size);
     std::ifstream test_labels_file("data/fashion_mnist_test_labels.csv");
 
     // Load validation labels
@@ -116,37 +124,46 @@ void Dataset1D::noise_data(double noise_strength) {
 }
 
 void Dataset1D::normalize_data() {
+    int sample_size = this->train_data[0].size();
     // Calculate mean of each feature
-    std::vector<double> mean_vector(this->train_data[0].size(), 0);
+    std::vector<double> mean_vector(sample_size, 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < (int)this->train_data[0].size(); i++) {
+    for (int i = 0; i < sample_size; i++) {
         double sum = 0;
-        for (int j = 0; j < (int)this->train_data.size(); j++) {
+        for (int j = 0; j < this->train_size; j++) {
             sum += this->train_data[j][i];
         }
 
-        mean_vector[i] = sum / this->train_data.size();
+        mean_vector[i] = sum / this->train_size;
     }
 
     // Calculate standard deviation of each feature
-    std::vector<double> std_vector(this->train_data[0].size(), 0);
+    std::vector<double> std_vector(sample_size, 0);
 
 #pragma omp parallel for
-    for (int i = 0; i < (int)this->train_data[0].size(); i++) {
+    for (int i = 0; i < sample_size; i++) {
         double sum = 0;
-        for (int j = 0; j < (int)this->train_data.size(); j++) {
+        for (int j = 0; j < this->train_size; j++) {
             sum += (this->train_data[j][i] - mean_vector[i]) * (this->train_data[j][i] - mean_vector[i]);
         }
 
-        std_vector[i] = sqrt(sum / this->train_data.size());
+        std_vector[i] = sqrt(sum / this->train_size);
     }
 
     // Normalize training data
 #pragma omp parallel for
-    for (int i = 0; i < (int)this->train_data.size(); i++) {
-        for (int j = 0; j < (int)this->train_data[i].size(); j++) {
+    for (int i = 0; i < this->train_size; i++) {
+        for (int j = 0; j < sample_size; j++) {
             this->train_data[i][j] = (this->train_data[i][j] - mean_vector[j]) / std_vector[j];
+        }
+    }
+
+    // Normalize validation data
+#pragma omp parallel for
+    for (int i = 0; i < this->valid_size; i++) {
+        for (int j = 0; j < sample_size; j++) {
+            this->valid_data[i][j] = (this->valid_data[i][j] - mean_vector[j]) / std_vector[j];
         }
     }
 

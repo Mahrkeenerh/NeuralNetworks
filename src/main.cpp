@@ -11,28 +11,17 @@
 #include "neural_fr/networks.hpp"
 
 void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
-    Dataset1D dataset;
-    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(64, 3, 1, layers::leaky_relu),
+    Dataset1D dataset(0.05);
+    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
+                          new layers::MaxPool2D(2, 2), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
                           new layers::MaxPool2D(2, 2), new layers::Flatten2D(),
-                          new layers::Dropout(0.25), new layers::Dense(32, layers::leaky_relu),
+                          new layers::Dense(128, layers::leaky_relu),
                           new layers::Dense(10, layers::softmax)});
 
     network.fit(dataset, 0.01, epochs, minibatch_size, learning_rate_start, learning_rate_end);
 
-    std::cout << "Accuracy: " << network.accuracy(dataset.test_data, dataset.test_labels) << std::endl;
-
-    // Evaluate network
-    // for (int i = 0; i < 10; i++) {
-    //     std::vector<double> output = network.predict(dataset.test_data[i]);
-
-    //     int result = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
-    //     double confidence = output[result] / std::accumulate(output.begin(), output.end(), 0.0);
-
-    //     std::cout << "i: " << i;
-    //     std::cout << " | Target: " << dataset.test_labels[i];
-    //     std::cout << " | Output: " << result;
-    //     std::cout << " | Confidence: " << confidence << std::endl;
-    // }
+    std::cout << "Test Accuracy: " << network.accuracy(dataset.test_data, dataset.test_labels)
+              << std::endl;
 }
 
 int main(int argc, char *argv[]) {

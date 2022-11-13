@@ -31,9 +31,6 @@ class DenseNetwork {
     void clear_updates();
 
     void before_batch();
-
-    double valid_accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets,
-                          std::vector<int> valid_i);
 };
 
 #endif
