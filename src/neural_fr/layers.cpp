@@ -142,7 +142,6 @@ void layers::Dense::predict(int thread_id) {
 }
 
 void layers::Dense::out_errors(int thread_id, std::vector<double> target_vector) {
-    // Calculate errors - MSE
     for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
         this->gradients[thread_id][n_i] = this->outputs[thread_id][n_i] - target_vector[n_i];
     }
