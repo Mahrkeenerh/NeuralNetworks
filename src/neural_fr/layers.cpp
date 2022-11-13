@@ -146,11 +146,6 @@ void layers::Dense::out_errors(int thread_id, std::vector<double> target_vector)
     for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
         this->gradients[thread_id][n_i] = this->outputs[thread_id][n_i] - target_vector[n_i];
     }
-
-    // Apply derivative activation function
-    for (int n_i = 0; n_i < this->output_shape[0]; n_i++) {
-        this->gradients[thread_id][n_i] *= this->derivative(this->outputs[thread_id][n_i]);
-    }
 }
 
 void layers::Dense::backpropagate(int thread_id) {
@@ -355,7 +350,8 @@ void layers::Conv2D::setup(layers::Layer* previous, layers::Layer* next, int thr
                     1.0 / sqrt(this->previous->output_shape[2]);
             } else {
                 // He initialization with normal distribution
-                this->weights[n_i][w_i] = randn() * sqrt(2.0 / this->previous->output_shape[2]);
+                this->weights[n_i][w_i] = randn() * sqrt(2.0 / (this->kernel_size * this->kernel_size *
+                                                                this->previous->output_shape[2]));
             }
         }
     }
