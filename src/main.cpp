@@ -10,7 +10,7 @@
 #include "neural_fr/datasets.hpp"
 #include "neural_fr/networks.hpp"
 
-void mnist_net(int epochs, int minibatch_size, double learning_rate_start, double learning_rate_end) {
+void mnist_net(int epochs, int minibatch_size, LearningRateScheduler* learn_scheduler) {
     Dataset1D dataset(0.05);
     DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
                           new layers::MaxPool2D(2, 2), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
@@ -18,13 +18,13 @@ void mnist_net(int epochs, int minibatch_size, double learning_rate_start, doubl
                           new layers::Dense(128, layers::leaky_relu),
                           new layers::Dense(10, layers::softmax)});
 
-    network.fit(dataset, 0.01, epochs, minibatch_size, learning_rate_start, learning_rate_end);
+    network.fit(dataset, 0.01, epochs, minibatch_size, learn_scheduler);
 
     std::cout << "Test Accuracy: " << network.accuracy(dataset.test_data, dataset.test_labels)
               << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     srand(time(NULL));
 
     // Get epochs and learning rate from command line arguments
@@ -58,18 +58,36 @@ int main(int argc, char *argv[]) {
     // measure time
     double start, end;
 
-    // Test datasets
-    // for (int i = 0; i < 10; i++) {
-    //     start = omp_get_wtime();
-    //     Dataset1D dataset;
-    //     end = omp_get_wtime();
-    //     std::cout << "Time to load data: " << end - start << "s" << std::endl;
-    // }
-
     // Test networks
     for (int i = 0; i < 10; i++) {
+        // Linear
         start = omp_get_wtime();
-        mnist_net(epochs, minibatch_size, learning_rate_start, learning_rate_end);
+        std::cout << "Linear Learning Rate" << std::endl;
+
+        LearningRateScheduler* learn_scheduler =
+            new LinearLearningRate(learning_rate_start, learning_rate_end);
+        mnist_net(epochs, minibatch_size, learn_scheduler);
+
+        end = omp_get_wtime();
+        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
+
+        // Halving
+        start = omp_get_wtime();
+        std::cout << "Halving Learning Rate" << std::endl;
+
+        learn_scheduler = new HalvingLearningRate(learning_rate_start);
+        mnist_net(epochs, minibatch_size, learn_scheduler);
+
+        end = omp_get_wtime();
+        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
+
+        // Custom Square
+        start = omp_get_wtime();
+        std::cout << "Custom Square Learning Rate" << std::endl;
+
+        learn_scheduler = new CustomSquareLearningRate(learning_rate_start, learning_rate_end);
+        mnist_net(epochs, minibatch_size, learn_scheduler);
+
         end = omp_get_wtime();
         std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
     }

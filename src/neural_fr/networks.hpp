@@ -6,6 +6,12 @@
 #include "datasets.hpp"
 #include "layers.hpp"
 
+class LearningRateScheduler {
+   public:
+    virtual double get_learning_rate(int epoch) { return 0; }
+    virtual void network_setup(int epochs) {}
+};
+
 class DenseNetwork {
    public:
     DenseNetwork(std::vector<layers::Layer*> layers);
@@ -14,8 +20,8 @@ class DenseNetwork {
 
     std::vector<double> predict(std::vector<double> input, int thread_id = 0);
 
-    void fit(Dataset1D dataset, double split, int epochs, int minibatch_size, double learning_rate_start,
-             double learning_rate_end = -1, bool verbose = true);
+    void fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
+             LearningRateScheduler* learn_scheduler, bool verbose = true);
 
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
 
@@ -31,6 +37,50 @@ class DenseNetwork {
     void clear_updates();
 
     void before_batch();
+};
+
+class ConstantLearningRate : public LearningRateScheduler {
+   public:
+    ConstantLearningRate(double learning_rate);
+
+    double get_learning_rate(int epoch) override;
+
+   private:
+    double learning_rate;
+};
+
+class LinearLearningRate : public LearningRateScheduler {
+   public:
+    LinearLearningRate(double learning_rate_start, double learning_rate_end);
+
+    void network_setup(int epochs) override;
+    double get_learning_rate(int epoch) override;
+
+   private:
+    double learning_rate_start, learning_rate_end;
+    double learning_rate_slope;
+};
+
+class HalvingLearningRate : public LearningRateScheduler {
+   public:
+    HalvingLearningRate(double learning_rate);
+
+    double get_learning_rate(int epoch) override;
+
+   private:
+    double learning_rate;
+};
+
+class CustomSquareLearningRate : public LearningRateScheduler {
+   public:
+    CustomSquareLearningRate(double learning_rate_start, double learning_rate_end);
+
+    void network_setup(int epochs) override;
+    double get_learning_rate(int epoch) override;
+
+   private:
+    double learning_rate_start, learning_rate_end;
+    double epochs;
 };
 
 #endif

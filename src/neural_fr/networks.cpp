@@ -74,7 +74,7 @@ void DenseNetwork::before_batch() {
 }
 
 void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
-                       double learning_rate_start, double learning_rate_end, bool verbose) {
+                       LearningRateScheduler* learn_scheduler, bool verbose) {
     double train_start = omp_get_wtime();
     double epoch_start, epoch_end, epoch_eta, epoch_time, elapsed_time, eta_s;
 
@@ -83,11 +83,9 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
     double learning_rate;
     double train_acc, valid_acc;
 
-    if (learning_rate_end == -1) {
-        learning_rate_end = learning_rate_start;
-    }
-
     std::vector<int> train_indices(dataset.train_size);
+
+    learn_scheduler->network_setup(epochs);
 
     for (int epoch = 0; epoch < epochs; epoch++) {
         epoch_start = omp_get_wtime();
@@ -107,13 +105,7 @@ void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatc
         std::iota(train_indices.begin(), train_indices.end(), 0);
         std::random_shuffle(train_indices.begin(), train_indices.end());
 
-        // TODO learning rate custom functions
-        learning_rate = learning_rate_start;
-        if (epochs > 1) {
-            learning_rate = (1 - ((double)epoch / (epochs - 1)) * ((double)epoch / (epochs - 1))) *
-                                (learning_rate_start - learning_rate_end) +
-                            learning_rate_end;
-        }
+        learning_rate = learn_scheduler->get_learning_rate(epoch);
 
         for (int batch = 0; batch < (dataset.train_size / minibatch_size); batch++) {
             before_batch();
@@ -203,4 +195,48 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
     }
 
     return std::accumulate(correct.begin(), correct.end(), 0) / (double)inputs.size();
+}
+
+ConstantLearningRate::ConstantLearningRate(double learning_rate) { this->learning_rate = learning_rate; }
+
+double ConstantLearningRate::get_learning_rate(int epoch) { return this->learning_rate; }
+
+LinearLearningRate::LinearLearningRate(double learning_rate_start, double learning_rate_end) {
+    this->learning_rate_start = learning_rate_start;
+    this->learning_rate_end = learning_rate_end;
+}
+
+void LinearLearningRate::network_setup(int epochs) {
+    this->learning_rate_slope = (learning_rate_end - learning_rate_start) / (epochs - 1);
+}
+
+double LinearLearningRate::get_learning_rate(int epoch) {
+    return learning_rate_start + learning_rate_slope * epoch;
+}
+
+HalvingLearningRate::HalvingLearningRate(double learning_rate) {
+    this->learning_rate = 2 * learning_rate;
+}
+
+double HalvingLearningRate::get_learning_rate(int epoch) {
+    this->learning_rate /= 2;
+    return this->learning_rate;
+}
+
+CustomSquareLearningRate::CustomSquareLearningRate(double learning_rate_start,
+                                                   double learning_rate_end) {
+    this->learning_rate_start = learning_rate_start;
+    this->learning_rate_end = learning_rate_end;
+}
+
+void CustomSquareLearningRate::network_setup(int epochs) { this->epochs = epochs; }
+
+double CustomSquareLearningRate::get_learning_rate(int epoch) {
+    if (epochs == 1) {
+        return this->learning_rate_start;
+    }
+
+    return (1 - ((double)epoch / (this->epochs - 1)) * ((double)epoch / (this->epochs - 1))) *
+               (this->learning_rate_start - this->learning_rate_end) +
+           this->learning_rate_end;
 }
