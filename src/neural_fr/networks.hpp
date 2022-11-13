@@ -20,8 +20,8 @@ class DenseNetwork {
 
     std::vector<double> predict(std::vector<double> input, int thread_id = 0);
 
-    void fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
-             LearningRateScheduler* learn_scheduler, bool verbose = true);
+    void fit(Dataset1D dataset, int epochs, int minibatch_size, LearningRateScheduler* learn_scheduler,
+             bool verbose = true);
 
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
 
@@ -73,14 +73,15 @@ class HalvingLearningRate : public LearningRateScheduler {
 
 class CustomSquareLearningRate : public LearningRateScheduler {
    public:
-    CustomSquareLearningRate(double learning_rate_start, double learning_rate_end);
+    CustomSquareLearningRate(double learning_rate_start, double learning_rate_end, double slope);
 
     void network_setup(int epochs) override;
     double get_learning_rate(int epoch) override;
 
    private:
     double learning_rate_start, learning_rate_end;
-    double epochs;
+    double slope;
+    int epochs;
 };
 
 #endif

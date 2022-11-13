@@ -10,15 +10,26 @@
 #include "neural_fr/datasets.hpp"
 #include "neural_fr/networks.hpp"
 
-void mnist_net(int epochs, int minibatch_size, LearningRateScheduler* learn_scheduler) {
+void conv_net() {
     Dataset1D dataset(0.05);
-    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
-                          new layers::MaxPool2D(2, 2), new layers::Conv2D(32, 3, 1, layers::leaky_relu),
-                          new layers::MaxPool2D(2, 2), new layers::Flatten2D(),
+    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(64, 3, 1, layers::leaky_relu),
+                          new layers::MaxPool2D(2, 2), new layers::Flatten2D(), new layers::Dropout(0.2),
                           new layers::Dense(128, layers::leaky_relu),
                           new layers::Dense(10, layers::softmax)});
 
-    network.fit(dataset, 0.01, epochs, minibatch_size, learn_scheduler);
+    LearningRateScheduler* custom_learn = new CustomSquareLearningRate(0.0001, 0.000001, 1.65);
+
+    network.fit(dataset, 25, 128, custom_learn, false);
+}
+
+void mnist_net(int epochs, int minibatch_size, LearningRateScheduler* learn_scheduler) {
+    Dataset1D dataset(0.05, true, 0.1);
+    DenseNetwork network({new layers::Input(28, 28), new layers::Conv2D(64, 3, 1, layers::leaky_relu),
+                          new layers::MaxPool2D(2, 2), new layers::Flatten2D(), new layers::Dropout(0.2),
+                          new layers::Dense(128, layers::leaky_relu),
+                          new layers::Dense(10, layers::softmax)});
+
+    network.fit(dataset, epochs, minibatch_size, learn_scheduler);
 
     std::cout << "Test Accuracy: " << network.accuracy(dataset.test_data, dataset.test_labels)
               << std::endl;
@@ -60,32 +71,10 @@ int main(int argc, char* argv[]) {
 
     // Test networks
     for (int i = 0; i < 10; i++) {
-        // Linear
         start = omp_get_wtime();
-        std::cout << "Linear Learning Rate" << std::endl;
 
         LearningRateScheduler* learn_scheduler =
-            new LinearLearningRate(learning_rate_start, learning_rate_end);
-        mnist_net(epochs, minibatch_size, learn_scheduler);
-
-        end = omp_get_wtime();
-        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
-
-        // Halving
-        start = omp_get_wtime();
-        std::cout << "Halving Learning Rate" << std::endl;
-
-        learn_scheduler = new HalvingLearningRate(learning_rate_start);
-        mnist_net(epochs, minibatch_size, learn_scheduler);
-
-        end = omp_get_wtime();
-        std::cout << "Time: " << (double)(end - start) << "s" << std::endl;
-
-        // Custom Square
-        start = omp_get_wtime();
-        std::cout << "Custom Square Learning Rate" << std::endl;
-
-        learn_scheduler = new CustomSquareLearningRate(learning_rate_start, learning_rate_end);
+            new CustomSquareLearningRate(learning_rate_start, learning_rate_end, 1.65);
         mnist_net(epochs, minibatch_size, learn_scheduler);
 
         end = omp_get_wtime();

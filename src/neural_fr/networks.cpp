@@ -39,28 +39,32 @@ void DenseNetwork::forwardpropagate(std::vector<double> input, int thread_id) {
     }
 }
 
+// First 3(4) layers are ignored
 void DenseNetwork::backpropagate(int thread_id, std::vector<double> target_vector) {
     this->layers[this->size - 1]->out_errors(thread_id, target_vector);
 
-    for (int l_i = this->size - 1; l_i >= 2; l_i--) {
+    for (int l_i = this->size - 1; l_i >= 5; l_i--) {
         this->layers[l_i]->backpropagate(thread_id);
     }
 }
 
+// First 3(4) layers are ignored
 void DenseNetwork::calculate_updates(int thread_id, double learning_rate) {
-    for (int l_i = 1; l_i < this->size; l_i++) {
+    for (int l_i = 4; l_i < this->size; l_i++) {
         this->layers[l_i]->calculate_updates(thread_id, learning_rate);
     }
 }
 
+// First 3(4) layers are ignored
 void DenseNetwork::apply_updates(int batch_size) {
-    for (int l_i = 1; l_i < this->size; l_i++) {
+    for (int l_i = 4; l_i < this->size; l_i++) {
         this->layers[l_i]->apply_updates(batch_size);
     }
 }
 
+// First 3(4) layers are ignored
 void DenseNetwork::clear_updates() {
-    for (int l_i = 1; l_i < this->size; l_i++) {
+    for (int l_i = 4; l_i < this->size; l_i++) {
         this->layers[l_i]->clear_updates();
     }
 }
@@ -73,7 +77,7 @@ void DenseNetwork::before_batch() {
     }
 }
 
-void DenseNetwork::fit(Dataset1D dataset, double split, int epochs, int minibatch_size,
+void DenseNetwork::fit(Dataset1D dataset, int epochs, int minibatch_size,
                        LearningRateScheduler* learn_scheduler, bool verbose) {
     double train_start = omp_get_wtime();
     double epoch_start, epoch_end, epoch_eta, epoch_time, elapsed_time, eta_s;
@@ -223,10 +227,11 @@ double HalvingLearningRate::get_learning_rate(int epoch) {
     return this->learning_rate;
 }
 
-CustomSquareLearningRate::CustomSquareLearningRate(double learning_rate_start,
-                                                   double learning_rate_end) {
+CustomSquareLearningRate::CustomSquareLearningRate(double learning_rate_start, double learning_rate_end,
+                                                   double slope) {
     this->learning_rate_start = learning_rate_start;
     this->learning_rate_end = learning_rate_end;
+    this->slope = slope;
 }
 
 void CustomSquareLearningRate::network_setup(int epochs) { this->epochs = epochs; }
@@ -236,7 +241,7 @@ double CustomSquareLearningRate::get_learning_rate(int epoch) {
         return this->learning_rate_start;
     }
 
-    return (1 - ((double)epoch / (this->epochs - 1)) * ((double)epoch / (this->epochs - 1))) *
+    return (1 - pow((double)epoch / (this->epochs - 1), this->slope)) *
                (this->learning_rate_start - this->learning_rate_end) +
            this->learning_rate_end;
 }
