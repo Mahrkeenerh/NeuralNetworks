@@ -1,5 +1,3 @@
-# precompile ?
-
 time_start=$(date +%s%3N)
 
 "g++" -fdiagnostics-color=always -g $(find . -type f -iregex '.*\.[c|h]pp') -Wall -fopenmp -Ofast -o main

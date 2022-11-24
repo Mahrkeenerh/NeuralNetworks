@@ -201,6 +201,71 @@ double DenseNetwork::accuracy(std::vector<std::vector<double>> inputs, std::vect
     return std::accumulate(correct.begin(), correct.end(), 0) / (double)inputs.size();
 }
 
+void DenseNetwork::save_predictions(Dataset1D dataset) {
+    std::vector<int> predictions(dataset.train_size + dataset.valid_size);
+
+#pragma omp parallel for
+    for (int i = 0; i < dataset.train_size; i++) {
+        std::vector<double> outputs = this->predict(dataset.train_data[i], omp_get_thread_num());
+        int max_index = 0;
+
+        for (int j = 0; j < (int)outputs.size(); j++) {
+            if (outputs[j] > outputs[max_index]) {
+                max_index = j;
+            }
+        }
+
+        predictions[i] = max_index;
+    }
+
+#pragma omp parallel for
+    for (int i = 0; i < dataset.valid_size; i++) {
+        std::vector<double> outputs = this->predict(dataset.valid_data[i], omp_get_thread_num());
+        int max_index = 0;
+
+        for (int j = 0; j < (int)outputs.size(); j++) {
+            if (outputs[j] > outputs[max_index]) {
+                max_index = j;
+            }
+        }
+
+        predictions[i + dataset.train_size] = max_index;
+    }
+
+    std::ofstream predictions_file;
+    predictions_file.open("train_predictions.csv");
+
+    for (int i = 0; i < (int)predictions.size(); i++) {
+        predictions_file << predictions[i] << std::endl;
+    }
+
+    predictions_file.close();
+
+    predictions.resize(dataset.test_size);
+
+#pragma omp parallel for
+    for (int i = 0; i < dataset.test_size; i++) {
+        std::vector<double> outputs = this->predict(dataset.test_data[i], omp_get_thread_num());
+        int max_index = 0;
+
+        for (int j = 0; j < (int)outputs.size(); j++) {
+            if (outputs[j] > outputs[max_index]) {
+                max_index = j;
+            }
+        }
+
+        predictions[i] = max_index;
+    }
+
+    predictions_file.open("test_predictions.csv");
+
+    for (int i = 0; i < (int)predictions.size(); i++) {
+        predictions_file << predictions[i] << std::endl;
+    }
+
+    predictions_file.close();
+}
+
 ConstantLearningRate::ConstantLearningRate(double learning_rate) { this->learning_rate = learning_rate; }
 
 double ConstantLearningRate::get_learning_rate(int epoch) { return this->learning_rate; }

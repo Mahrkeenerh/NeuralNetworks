@@ -1,6 +1,7 @@
 #ifndef networks
 #define networks
 
+#include <fstream>
 #include <vector>
 
 #include "datasets.hpp"
@@ -24,6 +25,7 @@ class DenseNetwork {
              bool verbose = true);
 
     double accuracy(std::vector<std::vector<double>> inputs, std::vector<int> targets);
+    void save_predictions(Dataset1D dataset);
 
    private:
     int size = 0;
